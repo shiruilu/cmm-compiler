@@ -94,6 +94,7 @@ BLANK		[ \t\v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d INT\t:%s\n", yylineno, yytext);
 #endif
+	yylval = atoi(yytext);
 	return INT;
 }
 

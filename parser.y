@@ -1,21 +1,28 @@
 %{
+/*
+	NOTE: union type_double about the Factor value
+*/
 	#include "lex.yy.c"
 	int yylex();
 %}
 
-%token IDENTIFIER CONSTANT STRING_LITERAL SIZEOF
-%token PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
-%token AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
-%token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
-%token XOR_ASSIGN OR_ASSIGN TYPE_NAME
+%union{
+	char type_char;
+	int type_int;
+	float type_float;
+}
 
-%token TYPEDEF EXTERN STATIC AUTO REGISTER
-%token CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE CONST VOLATILE VOID
-%token STRUCT UNION ENUM ELIPSIS RANGE
+%token <type_char> CHAR
+%token <type_int> INT 
+%token <type_float> FLOAT
+%token ID
+%token SEMI COMMA
+%token ASSIGNOP RELOP PLUS MINUS STAR DIV AND OR
+%token DOT NOT
+%token TYPE
+%token LP RP LB RB LC RC
+%token STRUCT RETURN IF ELSE WHILE
 
-%token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
-
-%start file
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 %%

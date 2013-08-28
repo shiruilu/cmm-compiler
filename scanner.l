@@ -1,11 +1,27 @@
 %{
+/* NOTE:
+	1. yycolumn not completed
+	2. {IS} 3uull accept??
+*/
 #include <stdio.h>
 #include "y.tab.h"
 
-void count();
+// #define PRINT_TOKEN
+
+int yycolumn = 1;
+/*
+#define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
+		yylloc.first_column = yycolumn; yylloc.last_column = yycolumn + yyleng - 1; \
+		yycolumn += yyleng;
+*/
 %}
 
+%option yylineno
+
+/* General Defination */
+
 DEC		[0-9]
+NDEC		[1-9]
 HEX		[a-fA-F0-9]
 OCT		[0-7]
 LETTER		[_a-zA-Z]
@@ -13,145 +29,261 @@ E			[Ee][+-]?{DEC}+
 FS			(f|F|l|L)
 IS			(u|U|l|L)*
 
-%option yylineno
+/* Tokens */
+CHAR		'(\\.|[^\\'])+'
+INT		(0[xX]{HEX}+{IS}?)|(0{OCT}+{IS}?)|({DEC}{IS}?)|({NDEC}{DEC}+{IS}?)
+FLOAT		({DEC}+{E}{FS}?)|({DEC}*"."{DEC}+({E})?{FS}?)|({DEC}+"."{DEC}*({E})?{FS}?)
+ID		{LETTER}(({LETTER}|{DEC}){0,31})
+SEMI    	;
+COMMA   	,
+ASSIGNOP    	=
+RELOP   	>|<|>=|<=|==|!=
+PLUS    	\+
+MINUS   	-
+STAR    	\*
+DIV 		\/
+AND 		&&
+OR  		\|\|
+DOT 		\.
+NOT 		!
+TYPE    	int|float|char
+LP  		\(
+RP  		\)
+LB  		\[
+RB  		\]
+LC  		\{
+RC  		\}
+STRUCT  	struct
+RETURN  	return
+IF  		if
+ELSE    	else
+WHILE   	while
+
+BLANK		[ \t\v\f\r]
+
+%x		COMMENT
+
 %%
-"/*"			{ comment(); }
+/* line comment */
+"//".*\n		{}
 
-"auto"			{ count(); return(AUTO); }
-"break"			{ count(); return(BREAK); }
-"case"			{ count(); return(CASE); }
-"char"			{ count(); return(CHAR); }
-"const"			{ count(); return(CONST); }
-"continue"		{ count(); return(CONTINUE); }
-"default"		{ count(); return(DEFAULT); }
-"do"			{ count(); return(DO); }
-"double"		{ count(); return(DOUBLE); }
-"else"			{ count(); return(ELSE); }
-"enum"			{ count(); return(ENUM); }
-"extern"		{ count(); return(EXTERN); }
-"float"			{ count(); return(FLOAT); }
-"for"			{ count(); return(FOR); }
-"goto"			{ count(); return(GOTO); }
-"if"			{ count(); return(IF); }
-"int"			{ count(); return(INT); }
-"long"			{ count(); return(LONG); }
-"register"		{ count(); return(REGISTER); }
-"return"		{ count(); return(RETURN); }
-"short"			{ count(); return(SHORT); }
-"signed"		{ count(); return(SIGNED); }
-"sizeof"		{ count(); return(SIZEOF); }
-"static"		{ count(); return(STATIC); }
-"struct"		{ count(); return(STRUCT); }
-"switch"		{ count(); return(SWITCH); }
-"typedef"		{ count(); return(TYPEDEF); }
-"union"			{ count(); return(UNION); }
-"unsigned"		{ count(); return(UNSIGNED); }
-"void"			{ count(); return(VOID); }
-"volatile"		{ count(); return(VOLATILE); }
-"while"			{ count(); return(WHILE); }
+/* block comment */
+"/*"			{ BEGIN(COMMENT); }
+<COMMENT>"*/"		{ BEGIN(INITIAL); }
+<COMMENT><<EOF>>	{ 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "Error type 1 at line %d: Unterminated comment\n", yylineno);
+#endif 
+}
+<COMMENT>\n		{ yycolumn = 1; }
+<COMMENT>.		{ }
 
-{LETTER}({LETTER}|{DEC})*		{ count(); return(IDENTIFIER); }
+/* blank characters */
+{BLANK}			{ }
+\n			{ yycolumn = 1; }
 
-0[xX]{HEX}+{IS}?		{ count(); return(CONSTANT); }
-0[xX]{HEX}+{IS}?		{ count(); return(CONSTANT); }
-0{OCT}+{IS}?		{ count(); return(CONSTANT); }
-0{OCT}+{IS}?		{ count(); return(CONSTANT); }
-{DEC}+{IS}?		{ count(); return(CONSTANT); }
-{DEC}+{IS}?		{ count(); return(CONSTANT); }
-'(\\.|[^\\'])+'		{ count(); return(CONSTANT); }
+/* tokens */
+{CHAR}	{
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d CHAR\t:%s\n", yylineno, yytext);
+#endif
+	return CHAR;
+}
 
-{DEC}+{E}{FS}?		{ count(); return(CONSTANT); }
-{DEC}*"."{DEC}+({E})?{FS}?	{ count(); return(CONSTANT); }
-{DEC}+"."{DEC}*({E})?{FS}?	{ count(); return(CONSTANT); }
+{INT} {
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d INT\t:%s\n", yylineno, yytext);
+#endif
+	return INT;
+}
 
-\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
+{FLOAT} {
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d FLOAT\t:%s\n", yylineno, yytext);
+#endif
+	return FLOAT;
+}
 
-">>="			{ count(); return(RIGHT_ASSIGN); }
-"<<="			{ count(); return(LEFT_ASSIGN); }
-"+="			{ count(); return(ADD_ASSIGN); }
-"-="			{ count(); return(SUB_ASSIGN); }
-"*="			{ count(); return(MUL_ASSIGN); }
-"/="			{ count(); return(DIV_ASSIGN); }
-"%="			{ count(); return(MOD_ASSIGN); }
-"&="			{ count(); return(AND_ASSIGN); }
-"^="			{ count(); return(XOR_ASSIGN); }
-"|="			{ count(); return(OR_ASSIGN); }
-">>"			{ count(); return(RIGHT_OP); }
-"<<"			{ count(); return(LEFT_OP); }
-"++"			{ count(); return(INC_OP); }
-"--"			{ count(); return(DEC_OP); }
-"->"			{ count(); return(PTR_OP); }
-"&&"			{ count(); return(AND_OP); }
-"||"			{ count(); return(OR_OP); }
-"<="			{ count(); return(LE_OP); }
-">="			{ count(); return(GE_OP); }
-"=="			{ count(); return(EQ_OP); }
-"!="			{ count(); return(NE_OP); }
-";"			{ count(); return(';'); }
-"{"			{ count(); return('{'); }
-"}"			{ count(); return('}'); }
-","			{ count(); return(','); }
-":"			{ count(); return(':'); }
-"="			{ count(); return('='); }
-"("			{ count(); return('('); }
-")"			{ count(); return(')'); }
-"["			{ count(); return('['); }
-"]"			{ count(); return(']'); }
-"."			{ count(); return('.'); }
-"&"			{ count(); return('&'); }
-"!"			{ count(); return('!'); }
-"~"			{ count(); return('~'); }
-"-"			{ count(); return('-'); }
-"+"			{ count(); return('+'); }
-"*"			{ count(); return('*'); }
-"/"			{ count(); return('/'); }
-"%"			{ count(); return('%'); }
-"<"			{ count(); return('<'); }
-">"			{ count(); return('>'); }
-"^"			{ count(); return('^'); }
-"|"			{ count(); return('|'); }
-"?"			{ count(); return('?'); }
+{SEMI} { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d SEMI\n", yylineno);
+#endif
+	return SEMI;
+}
 
-[ \t\v\n\f]		{ count(); }
-.			{ printf("Error type A at line %d: Mysterious character\'%s\'\n", yylineno, yytext);  }
+{COMMA}	{ 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d COMMA\n", yylineno);
+#endif
+	return COMMA;
+}
+
+{ASSIGNOP}    { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d ASSIGNOP\n", yylineno);
+#endif
+	return ASSIGNOP;
+}
+
+{RELOP}   { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d RELOP\n", yylineno);
+#endif
+	return RELOP;
+}
+
+{PLUS}    { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d PLUS\n", yylineno);
+#endif
+	return PLUS;
+}
+
+{MINUS}   { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d MINUS\n", yylineno);
+#endif
+	return MINUS;
+}
+
+{STAR}    { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d STAR\n", yylineno);
+#endif
+	return STAR;
+}
+
+{DIV} { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d DIV\n", yylineno);
+#endif
+	return DIV;
+}
+
+{AND} { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d AND\n", yylineno);
+#endif
+	return AND;
+}
+
+{OR}  { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d OR\n", yylineno);
+#endif
+	return OR;
+}
+
+{DOT} { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d DOT\n", yylineno);
+#endif
+	return DOT;
+}
+
+{NOT} { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d NOT\n", yylineno);
+#endif
+	return NOT;
+}
+
+{TYPE}    { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d TYPE\t:%s\n", yylineno, yytext);
+#endif
+	return TYPE;
+}
+
+{LP}  { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d LP\n", yylineno);
+#endif
+	return LP;
+}
+
+{RP}  { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d RP\n", yylineno);
+#endif
+	return RP;
+}
+
+{LB}  { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d LB\n", yylineno);
+#endif
+	return LB;
+}
+
+{RB}  { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d RB\n", yylineno);
+#endif
+	return RB;
+}
+
+{LC}  { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d LC\n", yylineno);
+#endif
+	return LC;
+}
+
+{RC}  { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d RC\n", yylineno);
+#endif
+	return RC;
+}
+
+{STRUCT}  { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d STRUCT\n", yylineno);
+#endif
+	return STRUCT;
+}
+
+{RETURN}  { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d RETURN\n", yylineno);
+#endif
+	return RETURN;
+}
+
+{IF}  { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d IF\n", yylineno);
+#endif
+	return IF;
+}
+
+{ELSE}    { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d ELSE\n", yylineno);
+#endif
+	return ELSE;
+}
+
+{WHILE}   { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d WHILE\n", yylineno);
+#endif
+	return WHILE;
+}
+
+{ID}  { 
+#ifdef PRINT_TOKEN
+	fprintf(stdout, "line:%4d ID\t:%s\n", yylineno, yytext);
+#endif
+	return ID;
+}
+
+.			{ fprintf(stdout, "Error type 1 at line %d: Mysterious character\'%s\'\n", yylineno, yytext);  }
 
 %%
 
 yywrap()
 {
 	return(1);
-}
-
-comment()
-{
-	char c, c1;
-
-loop:
-	while ((c = input()) != '*' && c != 0)
-		putchar(c);
-
-	if ((c1 = input()) != '/' && c != 0)
-	{
-		unput(c1);
-		goto loop;
-	}
-
-	if (c != 0)
-		putchar(c1);
-}
-
-int column = 0;
-
-void count()
-{
-	int i;
-	for (i = 0; yytext[i] != '\0'; i++)
-		if (yytext[i] == '\n')
-			column = 0;
-		else if (yytext[i] == '\t')
-			column += 8 - (column % 8);
-		else
-			column++;
-
-	ECHO;
 }

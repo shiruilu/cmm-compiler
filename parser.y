@@ -27,410 +27,110 @@
 %nonassoc ELSE
 %%
 
-primary_expr
-	: identifier
-	| CONSTANT
-	| STRING_LITERAL
-	| '(' expr ')'
-	;
+PROGRAM :   ExtDefList { syntax_tree_root = create_syntax_tree_node("PROGRAM", 1, $1); }
+        ;
 
-postfix_expr
-	: primary_expr
-	| postfix_expr '[' expr ']'
-	| postfix_expr '(' ')'
-	| postfix_expr '(' argument_expr_list ')'
-	| postfix_expr '.' identifier
-	| postfix_expr PTR_OP identifier
-	| postfix_expr INC_OP
-	| postfix_expr DEC_OP
-	;
+ExtDefList  :   ExtDef  ExtDefList { $$ = create_syntax_tree_node("ExtDefList", 2, $1, $2);  }
+            |   /* empty */ { $$ = create_syntax_tree_node("ExtDefList", 0); }
+            ;
 
-argument_expr_list
-	: assignment_expr
-	| argument_expr_list ',' assignment_expr
-	;
+ExtDef  :   Specifier ExtDecList SEMI { $$ = create_syntax_tree_node("ExtDef", 3, $1, $2, $3);  }
+        |   Specifier SEMI { $$ = create_syntax_tree_node("ExtDef", 2, $1, $2);  }
+        |   Specifier FunDec CompSt { $$ = create_syntax_tree_node("ExtDef", 3, $1, $2, $3);  }
+        |   error SEMI { resume_from_error("SEMI"); }
+        ;
 
-unary_expr
-	: postfix_expr
-	| INC_OP unary_expr
-	| DEC_OP unary_expr
-	| unary_operator cast_expr
-	| SIZEOF unary_expr
-	| SIZEOF '(' type_name ')'
-	;
+ExtDecList  :   VarDec { $$ = create_syntax_tree_node("ExtDecList", 1, $1);  }
+            |   VarDec COMMA ExtDecList { $$ = create_syntax_tree_node("ExtDecList", 3, $1, $2, $3);  }
+            ;
 
-unary_operator
-	: '&'
-	| '*'
-	| '+'
-	| '-'
-	| '~'
-	| '!'
-	;
+Specifier   :   TYPE { $$ = create_syntax_tree_node("Specifier", 1, $1);  }
+            |   StructSpecifier { $$ = create_syntax_tree_node("Specifier", 1, $1);  }
+            ;
 
-cast_expr
-	: unary_expr
-	| '(' type_name ')' cast_expr
-	;
+StructSpecifier :   STRUCT OptTag LC DefList RC { $$ = create_syntax_tree_node("StructSpecifier", 5, $1, $2, $3, $4, $5);  }
+                |   STRUCT Tag { $$ = create_syntax_tree_node("StructSpecifier", 2, $1, $2);  }
+                ;
 
-multiplicative_expr
-	: cast_expr
-	| multiplicative_expr '*' cast_expr
-	| multiplicative_expr '/' cast_expr
-	| multiplicative_expr '%' cast_expr
-	;
+OptTag  :   ID { $$ = create_syntax_tree_node("OptTag", 1, $1);  }
+        |   /* empty */ { $$ = create_syntax_tree_node("OptTag", 0);  }
+        ;
 
-additive_expr
-	: multiplicative_expr
-	| additive_expr '+' multiplicative_expr
-	| additive_expr '-' multiplicative_expr
-	;
+Tag :   ID { $$ = create_syntax_tree_node("Tag", 1, $1);  }
+    ;
 
-shift_expr
-	: additive_expr
-	| shift_expr LEFT_OP additive_expr
-	| shift_expr RIGHT_OP additive_expr
-	;
+VarDec  :   ID { $$ = create_syntax_tree_node("VarDec", 1, $1);  }
+        |   VarDec LB INT RB { $$ = create_syntax_tree_node("VarDec", 4, $1, $2, $3, $4);  }
+        ;
 
-relational_expr
-	: shift_expr
-	| relational_expr '<' shift_expr
-	| relational_expr '>' shift_expr
-	| relational_expr LE_OP shift_expr
-	| relational_expr GE_OP shift_expr
-	;
+FunDec  :   ID LP VarList RP { $$ = create_syntax_tree_node("FunDec", 4, $1, $2, $3, $4);  }
+        |   ID LP RP { $$ = create_syntax_tree_node("FunDec", 3, $1, $2, $3);  }
+        ;
 
-equality_expr
-	: relational_expr
-	| equality_expr EQ_OP relational_expr
-	| equality_expr NE_OP relational_expr
-	;
+VarList :   ParamDec COMMA VarList { $$ = create_syntax_tree_node("VarList", 3, $1, $2, $3);  }
+        |   ParamDec { $$ = create_syntax_tree_node("VarList", 1, $1);  }
+        ;
 
-and_expr
-	: equality_expr
-	| and_expr '&' equality_expr
-	;
+ParamDec    :   Specifier VarDec { $$ = create_syntax_tree_node("ParamDec", 2, $1, $2);  }
+            ;
 
-exclusive_or_expr
-	: and_expr
-	| exclusive_or_expr '^' and_expr
-	;
+CompSt  :   LC  DefList StmtList RC { $$ = create_syntax_tree_node("CompSt", 4, $1, $2, $3, $4);  }
+        |   error RC { resume_from_error("RC"); }
+        ;
 
-inclusive_or_expr
-	: exclusive_or_expr
-	| inclusive_or_expr '|' exclusive_or_expr
-	;
+StmtList    :   Stmt StmtList { $$ = create_syntax_tree_node("StmtList", 2, $1, $2);  }
+            |   /* empty */ { $$ = create_syntax_tree_node("StmtList", 0);  }
+            ;
 
-logical_and_expr
-	: inclusive_or_expr
-	| logical_and_expr AND_OP inclusive_or_expr
-	;
+Stmt    :   Exp SEMI { $$ = create_syntax_tree_node("Stmt", 2, $1, $2);  }
+        |   CompSt { $$ = create_syntax_tree_node("Stmt", 1, $1);  }
+        |   RETURN Exp SEMI { $$ = create_syntax_tree_node("Stmt", 3, $1, $2, $3);  }
+        |   IF LP Exp RP Stmt %prec LOWER_THAN_ELSE { $$ = create_syntax_tree_node("Stmt", 5, $1, $2, $3, $4, $5);  }
+        |   IF LP Exp RP Stmt ELSE Stmt { $$ = create_syntax_tree_node("Stmt", 7, $1, $2, $3, $4, $5, $6, $7);  }
+        |   WHILE LP Exp RP Stmt { $$ = create_syntax_tree_node("Stmt", 5, $1, $2, $3, $4, $5);  }
+        |   error SEMI { resume_from_error("SEMI"); }
+        ;
 
-logical_or_expr
-	: logical_and_expr
-	| logical_or_expr OR_OP logical_and_expr
-	;
+DefList :   Def DefList { $$ = create_syntax_tree_node("DefList", 2, $1, $2);  }
+        |   /* empty */ { $$ = create_syntax_tree_node("DefList", 0);  }
+        ;
 
-conditional_expr
-	: logical_or_expr
-	| logical_or_expr '?' logical_or_expr ':' conditional_expr
-	;
+Def :   Specifier DecList SEMI { $$ = create_syntax_tree_node("Def", 3, $1, $2, $3);  }
+    |   error SEMI { resume_from_error("SEMI"); }
+    ;
 
-assignment_expr
-	: conditional_expr
-	| unary_expr assignment_operator assignment_expr
-	;
+DecList :   Dec { $$ = create_syntax_tree_node("DecList", 1, $1);  }
+        |   Dec COMMA DecList { $$ = create_syntax_tree_node("DecList", 3, $1, $2, $3);  }
+        ;
 
-assignment_operator
-	: '='
-	| MUL_ASSIGN
-	| DIV_ASSIGN
-	| MOD_ASSIGN
-	| ADD_ASSIGN
-	| SUB_ASSIGN
-	| LEFT_ASSIGN
-	| RIGHT_ASSIGN
-	| AND_ASSIGN
-	| XOR_ASSIGN
-	| OR_ASSIGN
-	;
+Dec :   VarDec { $$ = create_syntax_tree_node("Dec", 1, $1);  }
+    |   VarDec ASSIGNOP Exp { $$ = create_syntax_tree_node("Dec", 3, $1, $2, $3);  }
+    ;
 
-expr
-	: assignment_expr
-	| expr ',' assignment_expr
-	;
+Exp :   Exp ASSIGNOP Exp { $$ = create_syntax_tree_node("Exp", 3, $1, $2, $3);  }
+    |   Exp AND Exp { $$ = create_syntax_tree_node("Exp", 3, $1, $2, $3);  }
+    |   Exp OR Exp { $$ = create_syntax_tree_node("Exp", 3, $1, $2, $3);  }
+    |   Exp RELOP Exp { $$ = create_syntax_tree_node("Exp", 3, $1, $2, $3);  }
+    |   Exp PLUS Exp { $$ = create_syntax_tree_node("Exp", 3, $1, $2, $3);  }
+    |   Exp MINUS Exp { $$ = create_syntax_tree_node("Exp", 3, $1, $2, $3);  }
+    |   Exp STAR Exp { $$ = create_syntax_tree_node("Exp", 3, $1, $2, $3);  }
+    |   Exp DIV Exp { $$ = create_syntax_tree_node("Exp", 3, $1, $2, $3);  }
+    |   LP Exp RP { $$ = create_syntax_tree_node("Exp", 3, $1, $2, $3);  }
+    |   MINUS Exp %prec UMINUS { $$ = create_syntax_tree_node("Exp", 2, $1, $2);  }
+    |   NOT Exp { $$ = create_syntax_tree_node("Exp", 2, $1, $2);  }
+    |   ID LP Args RP { $$ = create_syntax_tree_node("Exp", 4, $1, $2, $3, $4);  }
+    |   ID LP RP { $$ = create_syntax_tree_node("Exp", 3, $1, $2, $3);  }
+    |   Exp LB Exp RB { $$ = create_syntax_tree_node("Exp", 4, $1, $2, $3, $4);  }
+    |   Exp DOT ID { $$ = create_syntax_tree_node("Exp", 3, $1, $2, $3);  }
+    |   ID { $$ = create_syntax_tree_node("Exp", 1, $1);  }
+    |   INT { $$ = create_syntax_tree_node("Exp", 1, $1);  }
+    |   FLOAT { $$ = create_syntax_tree_node("Exp", 1, $1);  }
+    ;
 
-constant_expr
-	: conditional_expr
-	;
+Args    :   Exp COMMA Args { $$ = create_syntax_tree_node("Args", 3, $1, $2, $3); }
+        |   Exp { $$ = create_syntax_tree_node("Args", 1, $1);  }
+        ;
 
-declaration
-	: declaration_specifiers ';'
-	| declaration_specifiers init_declarator_list ';'
-	;
-
-declaration_specifiers
-	: storage_class_specifier
-	| storage_class_specifier declaration_specifiers
-	| type_specifier
-	| type_specifier declaration_specifiers
-	;
-
-init_declarator_list
-	: init_declarator
-	| init_declarator_list ',' init_declarator
-	;
-
-init_declarator
-	: declarator
-	| declarator '=' initializer
-	;
-
-storage_class_specifier
-	: TYPEDEF
-	| EXTERN
-	| STATIC
-	| AUTO
-	| REGISTER
-	;
-
-type_specifier
-	: CHAR
-	| SHORT
-	| INT
-	| LONG
-	| SIGNED
-	| UNSIGNED
-	| FLOAT
-	| DOUBLE
-	| CONST
-	| VOLATILE
-	| VOID
-	| struct_or_union_specifier
-	| enum_specifier
-	| TYPE_NAME
-	;
-
-struct_or_union_specifier
-	: struct_or_union identifier '{' struct_declaration_list '}'
-	| struct_or_union '{' struct_declaration_list '}'
-	| struct_or_union identifier
-	;
-
-struct_or_union
-	: STRUCT
-	| UNION
-	;
-
-struct_declaration_list
-	: struct_declaration
-	| struct_declaration_list struct_declaration
-	;
-
-struct_declaration
-	: type_specifier_list struct_declarator_list ';'
-	;
-
-struct_declarator_list
-	: struct_declarator
-	| struct_declarator_list ',' struct_declarator
-	;
-
-struct_declarator
-	: declarator
-	| ':' constant_expr
-	| declarator ':' constant_expr
-	;
-
-enum_specifier
-	: ENUM '{' enumerator_list '}'
-	| ENUM identifier '{' enumerator_list '}'
-	| ENUM identifier
-	;
-
-enumerator_list
-	: enumerator
-	| enumerator_list ',' enumerator
-	;
-
-enumerator
-	: identifier
-	| identifier '=' constant_expr
-	;
-
-declarator
-	: declarator2
-	| pointer declarator2
-	;
-
-declarator2
-	: identifier
-	| '(' declarator ')'
-	| declarator2 '[' ']'
-	| declarator2 '[' constant_expr ']'
-	| declarator2 '(' ')'
-	| declarator2 '(' parameter_type_list ')'
-	| declarator2 '(' parameter_identifier_list ')'
-	;
-
-pointer
-	: '*'
-	| '*' type_specifier_list
-	| '*' pointer
-	| '*' type_specifier_list pointer
-	;
-
-type_specifier_list
-	: type_specifier
-	| type_specifier_list type_specifier
-	;
-
-parameter_identifier_list
-	: identifier_list
-	| identifier_list ',' ELIPSIS
-	;
-
-identifier_list
-	: identifier
-	| identifier_list ',' identifier
-	;
-
-parameter_type_list
-	: parameter_list
-	| parameter_list ',' ELIPSIS
-	;
-
-parameter_list
-	: parameter_declaration
-	| parameter_list ',' parameter_declaration
-	;
-
-parameter_declaration
-	: type_specifier_list declarator
-	| type_name
-	;
-
-type_name
-	: type_specifier_list
-	| type_specifier_list abstract_declarator
-	;
-
-abstract_declarator
-	: pointer
-	| abstract_declarator2
-	| pointer abstract_declarator2
-	;
-
-abstract_declarator2
-	: '(' abstract_declarator ')'
-	| '[' ']'
-	| '[' constant_expr ']'
-	| abstract_declarator2 '[' ']'
-	| abstract_declarator2 '[' constant_expr ']'
-	| '(' ')'
-	| '(' parameter_type_list ')'
-	| abstract_declarator2 '(' ')'
-	| abstract_declarator2 '(' parameter_type_list ')'
-	;
-
-initializer
-	: assignment_expr
-	| '{' initializer_list '}'
-	| '{' initializer_list ',' '}'
-	;
-
-initializer_list
-	: initializer
-	| initializer_list ',' initializer
-	;
-
-statement
-	: labeled_statement
-	| compound_statement
-	| expression_statement
-	| selection_statement
-	| iteration_statement
-	| jump_statement
-	;
-
-labeled_statement
-	: identifier ':' statement
-	| CASE constant_expr ':' statement
-	| DEFAULT ':' statement
-	;
-
-compound_statement
-	: '{' '}'
-	| '{' statement_list '}'
-	| '{' declaration_list '}'
-	| '{' declaration_list statement_list '}'
-	;
-
-declaration_list
-	: declaration
-	| declaration_list declaration
-	;
-
-statement_list
-	: statement
-	| statement_list statement
-	;
-
-expression_statement
-	: ';'
-	| expr ';'
-	;
-
-selection_statement
-	: IF '(' expr ')' statement %prec LOWER_THAN_ELSE
-	| IF '(' expr ')' statement ELSE statement
-	| SWITCH '(' expr ')' statement
-	;
-
-iteration_statement
-	: WHILE '(' expr ')' statement
-	| DO statement WHILE '(' expr ')' ';'
-	| FOR '(' ';' ';' ')' statement
-	| FOR '(' ';' ';' expr ')' statement
-	| FOR '(' ';' expr ';' ')' statement
-	| FOR '(' ';' expr ';' expr ')' statement
-	| FOR '(' expr ';' ';' ')' statement
-	| FOR '(' expr ';' ';' expr ')' statement
-	| FOR '(' expr ';' expr ';' ')' statement
-	| FOR '(' expr ';' expr ';' expr ')' statement
-	;
-
-jump_statement
-	: GOTO identifier ';'
-	| CONTINUE ';'
-	| BREAK ';'
-	| RETURN ';'
-	| RETURN expr ';'
-	;
-
-file
-	: external_definition
-	| file external_definition
-	;
-
-external_definition
-	: function_definition
-	| declaration
-	;
-
-function_definition
-	: declarator function_body
-	| declaration_specifiers declarator function_body
-	;
-
-function_body
-	: compound_statement
-	| declaration_list compound_statement
-	;
-
-identifier
-	: IDENTIFIER
-	;
 %%
 
 #include <stdio.h>

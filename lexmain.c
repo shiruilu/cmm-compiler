@@ -1,6 +1,7 @@
-#include "stdio.h"
+#include <stdio.h>
 
 extern FILE* yyin;
+extern int yylex();
 
 int main(int argc, char ** argv)
 {

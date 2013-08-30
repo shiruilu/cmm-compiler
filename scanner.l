@@ -4,16 +4,24 @@
 	2. {IS} 3uull accept??
 */
 #include <stdio.h>
-#include "y.tab.h"
+#include "parser.tab.h"
+#include "ErrorHandler.h"
+//void reportError(int errorcode, int lineno, int column, const char* msg);
+#include "defs.h"
+// typedef enum {LEXICAL_ERROR=1, SYNTAX_ERROR, COMMENT_ERROR} ErrorCode;
 
+#define TAB_WIDTH 8 // when not useful, assign TAB_WIDTH=1
 // #define PRINT_TOKEN
 
 int yycolumn = 1;
-/*
+//extern YYLTYPE yylloc;
+
 #define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
 		yylloc.first_column = yycolumn; yylloc.last_column = yycolumn + yyleng - 1; \
 		yycolumn += yyleng;
-*/
+
+//void reportError(int errorcode, int lineno, int column, const char *msg);
+
 %}
 
 %option yylineno
@@ -59,31 +67,27 @@ IF  		if
 ELSE    	else
 WHILE   	while
 
-BLANK		[ \t\v\f\r]
+BLANK		[ \v\f\r]
 
 %x		COMMENT
 
 %%
-/* line comment */
-"//".*\n		{}
 
-/* block comment */
+"//".*\n		{ yycolumn = 1; }
+
 "/*"			{ BEGIN(COMMENT); }
 <COMMENT>"*/"		{ BEGIN(INITIAL); }
 <COMMENT><<EOF>>	{ 
-#ifdef PRINT_TOKEN
-	fprintf(stdout, "Error type 1 at line %d: Unterminated comment\n", yylineno);
-#endif 
+	reportError(COMMENT_ERROR, yylineno, yycolumn, "Unterminated comment");
 }
 <COMMENT>\n		{ yycolumn = 1; }
 <COMMENT>.		{ }
 
-/* blank characters */
 {BLANK}			{ }
 \n			{ yycolumn = 1; }
+\t			{ yycolumn += (TAB_WIDTH-1); }
 
-/* tokens */
-{CHAR}	{
+{CHAR} {
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d CHAR\t:%s\n", yylineno, yytext);
 #endif
@@ -94,7 +98,7 @@ BLANK		[ \t\v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d INT\t:%s\n", yylineno, yytext);
 #endif
-	yylval = atoi(yytext);
+	// yylval = atoi(yytext);
 	return INT;
 }
 
@@ -119,35 +123,35 @@ BLANK		[ \t\v\f\r]
 	return COMMA;
 }
 
-{ASSIGNOP}    { 
+{ASSIGNOP} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d ASSIGNOP\n", yylineno);
 #endif
 	return ASSIGNOP;
 }
 
-{RELOP}   { 
+{RELOP} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d RELOP\n", yylineno);
 #endif
 	return RELOP;
 }
 
-{PLUS}    { 
+{PLUS} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d PLUS\n", yylineno);
 #endif
 	return PLUS;
 }
 
-{MINUS}   { 
+{MINUS} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d MINUS\n", yylineno);
 #endif
 	return MINUS;
 }
 
-{STAR}    { 
+{STAR} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d STAR\n", yylineno);
 #endif
@@ -168,7 +172,7 @@ BLANK		[ \t\v\f\r]
 	return AND;
 }
 
-{OR}  { 
+{OR} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d OR\n", yylineno);
 #endif
@@ -189,102 +193,106 @@ BLANK		[ \t\v\f\r]
 	return NOT;
 }
 
-{TYPE}    { 
+{TYPE} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d TYPE\t:%s\n", yylineno, yytext);
 #endif
 	return TYPE;
 }
 
-{LP}  { 
+{LP} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d LP\n", yylineno);
 #endif
 	return LP;
 }
 
-{RP}  { 
+{RP} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d RP\n", yylineno);
 #endif
 	return RP;
 }
 
-{LB}  { 
+{LB} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d LB\n", yylineno);
 #endif
 	return LB;
 }
 
-{RB}  { 
+{RB} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d RB\n", yylineno);
 #endif
 	return RB;
 }
 
-{LC}  { 
+{LC} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d LC\n", yylineno);
 #endif
 	return LC;
 }
 
-{RC}  { 
+{RC} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d RC\n", yylineno);
 #endif
 	return RC;
 }
 
-{STRUCT}  { 
+{STRUCT} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d STRUCT\n", yylineno);
 #endif
 	return STRUCT;
 }
 
-{RETURN}  { 
+{RETURN} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d RETURN\n", yylineno);
 #endif
 	return RETURN;
 }
 
-{IF}  { 
+{IF} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d IF\n", yylineno);
 #endif
 	return IF;
 }
 
-{ELSE}    { 
+{ELSE} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d ELSE\n", yylineno);
 #endif
 	return ELSE;
 }
 
-{WHILE}   { 
+{WHILE} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d WHILE\n", yylineno);
 #endif
 	return WHILE;
 }
 
-{ID}  { 
+{ID} { 
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d ID\t:%s\n", yylineno, yytext);
 #endif
 	return ID;
 }
 
-.			{ fprintf(stdout, "Error type 1 at line %d: Mysterious character\'%s\'\n", yylineno, yytext);  }
+. {
+	char err[MAX_ERRINFO];
+	sprintf(err, "Mysterious character :\'%s\'", yytext);
+	reportError(LEXICAL_ERROR, yylineno, yycolumn, err);
+}
 
 %%
 
-yywrap()
+int yywrap()
 {
 	return(1);
 }

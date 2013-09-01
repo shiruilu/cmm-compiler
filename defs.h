@@ -5,12 +5,12 @@
 
 #define TRUE 1
 #define FALSE 0
-#define MAX_ERRINFO 40
-/* ErrorCode starts at 1 */
-typedef enum {LEXICAL_ERROR = 1, SYNTAX_ERROR, COMMENT_ERROR} ErrorCode;
+
+typedef char* string;
+typedef unsigned char bool;
 
 /* useful functions */
 void * ck_malloc(int len);
-typedef char* string;
-string String(char * ps);
+string String(const char * ps);
+int full_atoi(const char * psnum);
 #endif

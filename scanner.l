@@ -1,26 +1,25 @@
 %{
-/* NOTE:
+/*
+NOTE:
 	1. yycolumn not completed
 	2. {IS} 3uull accept??
 */
 #include <stdio.h>
-#include "parser.tab.h"
-#include "ErrorHandler.h"
-//void reportError(int errorcode, int lineno, int column, const char* msg);
+#include <string.h>
+#include "ast.h"
 #include "defs.h"
-// typedef enum {LEXICAL_ERROR=1, SYNTAX_ERROR, COMMENT_ERROR} ErrorCode;
+#include "ErrorHandler.h"
+#include "parser.tab.h"
+
 
 #define TAB_WIDTH 8 // when not useful, assign TAB_WIDTH=1
 // #define PRINT_TOKEN
 
 int yycolumn = 1;
-//extern YYLTYPE yylloc;
 
 #define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
 		yylloc.first_column = yycolumn; yylloc.last_column = yycolumn + yyleng - 1; \
 		yycolumn += yyleng;
-
-//void reportError(int errorcode, int lineno, int column, const char *msg);
 
 %}
 
@@ -54,7 +53,7 @@ AND 		&&
 OR  		\|\|
 DOT 		\.
 NOT 		!
-TYPE    	int|float|char
+TYPE    	char|int|float
 LP  		\(
 RP  		\)
 LB  		\[
@@ -91,6 +90,8 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d CHAR\t:%s\n", yylineno, yytext);
 #endif
+	yylval = create_token(CHAR_TOKEN);
+	yylval->value.char_val = *(yytext+1); // yytext ~ '.' . stands for a char
 	return CHAR;
 }
 
@@ -98,7 +99,8 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d INT\t:%s\n", yylineno, yytext);
 #endif
-	// yylval = atoi(yytext);
+	yylval = create_token(INT_TOKEN);
+	yylval->value.int_val = full_atoi(yytext);
 	return INT;
 }
 
@@ -106,6 +108,8 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d FLOAT\t:%s\n", yylineno, yytext);
 #endif
+	yylval = create_token(FLOAT_TOKEN);
+	yylval->value.float_val = atof(yytext);
 	return FLOAT;
 }
 
@@ -113,6 +117,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d SEMI\n", yylineno);
 #endif
+	yylval = create_token(SEMI_TOKEN);
 	return SEMI;
 }
 
@@ -120,6 +125,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d COMMA\n", yylineno);
 #endif
+	yylval = create_token(COMMA_TOKEN);
 	return COMMA;
 }
 
@@ -127,6 +133,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d ASSIGNOP\n", yylineno);
 #endif
+	yylval = create_token(ASSIGNOP_TOKEN);
 	return ASSIGNOP;
 }
 
@@ -134,6 +141,9 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d RELOP\n", yylineno);
 #endif
+	yylval = create_token(RELOP_TOKEN);
+	/* RELOP is not unique, so remain to be analysed */
+	yylval->value.str_val = String(yytext); 
 	return RELOP;
 }
 
@@ -141,6 +151,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d PLUS\n", yylineno);
 #endif
+	yylval = create_token(PLUS_TOKEN);
 	return PLUS;
 }
 
@@ -148,6 +159,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d MINUS\n", yylineno);
 #endif
+	yylval = create_token(MINUS_TOKEN);
 	return MINUS;
 }
 
@@ -155,6 +167,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d STAR\n", yylineno);
 #endif
+	yylval = create_token(STAR_TOKEN);
 	return STAR;
 }
 
@@ -162,6 +175,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d DIV\n", yylineno);
 #endif
+	yylval = create_token(DIV_TOKEN);
 	return DIV;
 }
 
@@ -169,6 +183,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d AND\n", yylineno);
 #endif
+	yylval = create_token(AND_TOKEN);
 	return AND;
 }
 
@@ -176,6 +191,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d OR\n", yylineno);
 #endif
+	yylval = create_token(OR_TOKEN);
 	return OR;
 }
 
@@ -183,6 +199,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d DOT\n", yylineno);
 #endif
+	yylval = create_token(DOT_TOKEN);
 	return DOT;
 }
 
@@ -190,6 +207,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d NOT\n", yylineno);
 #endif
+	yylval = create_token(NOT_TOKEN);
 	return NOT;
 }
 
@@ -197,6 +215,13 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d TYPE\t:%s\n", yylineno, yytext);
 #endif
+	yylval = create_token(TYPE_TOKEN);
+	if ( !strcmp(yytext, "char") )
+		yylval->value.type_val = Char;
+	else if( !strcmp(yytext, "int") )
+		yylval->value.type_val = Int;
+	else if( !strcmp(yytext, "float") )
+		yylval->value.type_val = Float;
 	return TYPE;
 }
 
@@ -204,6 +229,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d LP\n", yylineno);
 #endif
+	yylval = create_token(LP_TOKEN);
 	return LP;
 }
 
@@ -211,6 +237,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d RP\n", yylineno);
 #endif
+	yylval = create_token(RP_TOKEN);
 	return RP;
 }
 
@@ -218,6 +245,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d LB\n", yylineno);
 #endif
+	yylval = create_token(LB_TOKEN);
 	return LB;
 }
 
@@ -225,6 +253,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d RB\n", yylineno);
 #endif
+	yylval = create_token(RB_TOKEN);
 	return RB;
 }
 
@@ -232,6 +261,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d LC\n", yylineno);
 #endif
+	yylval = create_token(LC_TOKEN);
 	return LC;
 }
 
@@ -239,6 +269,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d RC\n", yylineno);
 #endif
+	yylval = create_token(RC_TOKEN);
 	return RC;
 }
 
@@ -246,6 +277,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d STRUCT\n", yylineno);
 #endif
+	yylval = create_token(STRUCT_TOKEN);
 	return STRUCT;
 }
 
@@ -253,6 +285,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d RETURN\n", yylineno);
 #endif
+	yylval = create_token(RETURN_TOKEN);
 	return RETURN;
 }
 
@@ -260,6 +293,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d IF\n", yylineno);
 #endif
+	yylval = create_token(IF_TOKEN);
 	return IF;
 }
 
@@ -267,6 +301,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d ELSE\n", yylineno);
 #endif
+	yylval = create_token(ELSE_TOKEN);
 	return ELSE;
 }
 
@@ -274,6 +309,7 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d WHILE\n", yylineno);
 #endif
+	yylval = create_token(WHILE_TOKEN);
 	return WHILE;
 }
 
@@ -281,12 +317,15 @@ BLANK		[ \v\f\r]
 #ifdef PRINT_TOKEN
 	fprintf(stdout, "line:%4d ID\t:%s\n", yylineno, yytext);
 #endif
+	yylval = create_token(ID_TOKEN);
+	yylval->value.str_val = String(yytext);
 	return ID;
 }
 
 . {
 	char err[MAX_ERRINFO];
 	sprintf(err, "Mysterious character :\'%s\'", yytext);
+	assert( strlen(err) < MAX_ERRINFO );
 	reportError(LEXICAL_ERROR, yylineno, yycolumn, err);
 }
 

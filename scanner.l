@@ -12,7 +12,7 @@ NOTE:
 #include "parser.tab.h"
 
 
-#define TAB_WIDTH 8 // when not useful, assign TAB_WIDTH=1
+#define TAB_WIDTH 1 // when not used, assign TAB_WIDTH=1
 // #define PRINT_TOKEN
 
 int yycolumn = 1;
@@ -77,7 +77,7 @@ BLANK		[ \v\f\r]
 "/*"			{ BEGIN(COMMENT); }
 <COMMENT>"*/"		{ BEGIN(INITIAL); }
 <COMMENT><<EOF>>	{ 
-	reportError(COMMENT_ERROR, yylineno, yycolumn, "Unterminated comment");
+	reportError(COMMENT_ERROR, yylineno, yylloc.first_column, "Unterminated comment");
 }
 <COMMENT>\n		{ yycolumn = 1; }
 <COMMENT>.		{ }
@@ -326,7 +326,7 @@ BLANK		[ \v\f\r]
 	char err[MAX_ERRINFO];
 	sprintf(err, "Mysterious character :\'%s\'", yytext);
 	assert( strlen(err) < MAX_ERRINFO );
-	reportError(LEXICAL_ERROR, yylineno, yycolumn, err);
+	reportError(LEXICAL_ERROR, yylineno, yylloc.first_column, err);
 }
 
 %%

@@ -2,6 +2,8 @@
 #define DEFS_H
 
 #include <assert.h>
+/* definations for the aim of this program */
+#define PRINT_AST
 
 #define TRUE 1
 #define FALSE 0

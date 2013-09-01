@@ -153,5 +153,5 @@ void yyerror(const char *msg)
 {
   //fflush(stdout);
   //fprintf(stderr, "error :%d:%d: %s\n", yylineno, yycolumn, msg);
-  reportError(SYNTAX_ERROR, yylineno, yycolumn, msg);
+  reportError(SYNTAX_ERROR, yylineno, yylloc.first_column, msg);
 }

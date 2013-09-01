@@ -14,6 +14,7 @@ typedef enum {
 	TYPE_TOKEN,
 	LP_TOKEN, RP_TOKEN, LB_TOKEN, RB_TOKEN, LC_TOKEN, RC_TOKEN,
 	STRUCT_TOKEN, RETURN_TOKEN, IF_TOKEN, ELSE_TOKEN, WHILE_TOKEN,
+
 	Program_SYNTAX, ExtDefList_SYNTAX, ExtDef_SYNTAX, ExtDecList_SYNTAX,
 	Specifier_SYNTAX, StructSpecifier_SYNTAX, OptTag_SYNTAX, Tag_SYNTAX,
 	VarDec_SYNTAX, FunDec_SYNTAX, VarList_SYNTAX, ParamDec_SYNTAX,
@@ -42,6 +43,7 @@ extern past_node gl_ast_root;
 /* Functions */
 past_node create_token(node_type type);
 past_node create_syntax(node_type type, int argno, ...);
+void print_ast(past_node p_node, int spaces);
 void free_ast_tree(past_node p_root);
 
 #endif

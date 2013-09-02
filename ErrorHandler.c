@@ -1,6 +1,6 @@
 #include "ErrorHandler.h"
+#include "defs.h"
 #include <stdio.h>
-#include <assert.h>
 
 #ifdef PRINT_AST
 bool gl_error_exist = FALSE;

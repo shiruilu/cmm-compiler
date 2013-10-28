@@ -20,3 +20,4 @@ void reportError(int errorcode, int lineno, int column,  const char *msg)
 		fprintf(stderr, "%s\n", msg);
 	}
 }
+

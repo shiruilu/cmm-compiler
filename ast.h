@@ -2,6 +2,7 @@
 #define AST_H
 
 #include "defs.h"
+#include "type.h"
 
 #define YYSTYPE past_node
 
@@ -23,6 +24,19 @@ typedef enum {
 	Exp_SYNTAX, Args_SYNTAX
 } node_type;
 
+typedef struct {
+    Type *inh_type;
+    Type *type;
+    unsigned char is_in_struct;
+    FieldList *structure;
+    unsigned char is_legal;
+    arg_node *args, *inh_args;
+    char *id;
+    Type *ret_type;
+    unsigned char is_definition;
+    unsigned char is_declared;
+} Attribute;
+
 typedef struct ast {
 	// string name;
 	node_type type;
@@ -33,10 +47,11 @@ typedef struct ast {
 		int int_val;
 		float float_val;
 		string str_val;
-		enum {Char, Int, Float} type_val;
+		basic_type type_val;
 	} value;
 	int lineno;
 	int column;
+    Attribute attr;
 } ast_node, * past_node;
 /* declare AST Root */
 extern past_node gl_ast_root;

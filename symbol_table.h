@@ -5,7 +5,7 @@
 #include "type.h"
 
 #define SYMBOL_TABLE_LEN 0x4000
-#define MAX_SCOPE 20
+#define MAX_SCOPE_DEPTH 20
 
 /* Symbols */
 typedef struct {
@@ -24,7 +24,7 @@ typedef struct {
 } func_symbol;
 
 typedef struct symbol_node_ {
-    string name;
+    string key;
     unsigned int depth;
     enum { Var, Struct, Func } type;
     union {
@@ -36,11 +36,17 @@ typedef struct symbol_node_ {
 
 typedef struct hash_node_ {
     symbol_node *data;
-    hash_node *next, *prev, *scope_next;
+    struct hash_node_ *next, *prev, *scope_next;
 } hash_node;
-
+/* Type ? */
+typedef struct type_list_ {
+    Type *data;
+    struct type_list_ *next;
+} type_list;
+Type *p_int_type, *p_float_type;
+extern type_list gl_type_stack[MAX_SCOPE_DEPTH];
 /* Variables */
-extern hash_node gl_scope_stack[MAX_SCOPE];
+extern hash_node gl_scope_stack[MAX_SCOPE_DEPTH];
 extern hash_node gl_symbol_table[SYMBOL_TABLE_LEN];
 extern unsigned int gl_cur_depth;
 

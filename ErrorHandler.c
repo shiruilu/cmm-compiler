@@ -8,7 +8,7 @@ bool gl_error_exist = FALSE;
 
 void reportError(int errorcode, int lineno, int column,  const char *msg)
 {
-	assert(1<=errorcode && errorcode<=3);
+	assert(1<=errorcode);
 	gl_error_exist = TRUE;
 
 	const char *defaultMsg[] = { "lexical error", "syntax error", "comment error" };

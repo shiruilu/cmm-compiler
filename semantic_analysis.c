@@ -9,7 +9,7 @@
 void print_error(int type, int lineno, char *msg) {
     gl_error_exist = TRUE;
     //fprintf(stdout, "Error type %d at line %d: %s\n", type, lineno, tips);
-    reportError(SYNTAX_ERROR, lineno, 0, msg);
+    reportError(type, lineno, 0, msg);
 }
 
 void check_undef_func() {
@@ -35,7 +35,7 @@ void check_type_match(ast_node *p_node, ast_node **children) {
             p_node->attr.is_legal = TRUE;
         }
         else {
-            print_error(7, children[1]->lineno, "Type mismatched");
+            print_error(7, children[1]->lineno, "Type not matched");
             p_node->attr.is_legal = FALSE;
         }
     }
@@ -46,24 +46,32 @@ void check_type_match(ast_node *p_node, ast_node **children) {
 void handle_ExtDef(int child_num, ast_node *p_node, ast_node **children) {
     if (child_num == 3 && children[0]->type == Specifier_SYNTAX        \
         && children[1]->type == ExtDecList_SYNTAX && children[2]->type == SEMI_TOKEN) {
+        /* ExtDef -> Specifiet ExtDecList SEMI
+           for global variable definition */
         sdt(children[0]);
         children[1]->attr.inh_type = children[0]->attr.type;
         sdt(children[1]);
     }
     else if (child_num == 2 && children[0]->type == Specifier_SYNTAX    \
         && children[1]->type == SEMI_TOKEN) {
+        /* ExtDef -> Specifier SEMI
+           global struct definition */
         sdt(children[0]);
     }
     else if (child_num == 3 && children[0]->type == Specifier_SYNTAX    \
         && children[1]->type == FunDec_SYNTAX && children[2]->type == SEMI_TOKEN) {
+        /* ExtDef -> Specifier FunDec SEMI
+           global function declaration */
         sdt(children[0]);
         children[1]->attr.inh_type = children[0]->attr.type;
-        children[1]->attr.is_definition = FALSE;
+        children[1]->attr.is_definition = FALSE; // declaration, not define
         sdt(children[1]);
         exit_top_scope();
     }
     else if (child_num == 3 && children[0]->type == Specifier_SYNTAX    \
         && children[1]->type == FunDec_SYNTAX && children[2]->type == CompSt_SYNTAX) {
+        /* ExtDef -> Specifier FunDec CompSt
+           global function definition */
         sdt(children[0]);
         children[1]->attr.inh_type = children[0]->attr.type;
         children[1]->attr.is_definition = TRUE;
@@ -77,6 +85,8 @@ void handle_ExtDef(int child_num, ast_node *p_node, ast_node **children) {
 void handle_Def(int child_num, ast_node *p_node, ast_node **children) {
     if (child_num == 3 && children[0]->type == Specifier_SYNTAX         \
         && children[1]->type == DecList_SYNTAX && children[2]->type == SEMI_TOKEN) {
+        /* Def -> Specifier DecList SEMI
+           local definitions */
         sdt(children[0]);
         children[1]->attr.inh_type = children[0]->attr.type;
         children[1]->attr.is_in_struct = p_node->attr.is_in_struct;
@@ -92,18 +102,21 @@ void handle_DecList(int child_num, ast_node *p_node, ast_node **children) {
     children[0]->attr.inh_type = p_node->attr.inh_type;
     sdt(children[0]);
     if (child_num == 1 && children[0]->type == Dec_SYNTAX) {
-
+        /* DecList -> Dec */
     }
     else if (child_num == 3 && children[0]->type == Dec_SYNTAX          \
         && children[1]->type == COMMA_TOKEN && children[2]->type == DecList_SYNTAX) {
+        /* DecList -> Dec COMMA DecList */
         children[2]->attr.is_in_struct = p_node->attr.is_in_struct;
         children[2]->attr.inh_type = p_node->attr.inh_type;
         sdt(children[2]);
-        if (p_node->attr.is_in_struct)
+        if (p_node->attr.is_in_struct) {
             children[0]->attr.structure->next = children[2]->attr.structure;
+        }
     }
-    if (p_node->attr.is_in_struct)
+    if (p_node->attr.is_in_struct) {
         p_node->attr.structure = children[0]->attr.structure;
+    }
 }
 
 void handle_Dec(int child_num, ast_node *p_node, ast_node **children) {
@@ -113,25 +126,33 @@ void handle_Dec(int child_num, ast_node *p_node, ast_node **children) {
     if (p_node->attr.is_in_struct)
         p_node->attr.structure = children[0]->attr.structure;
     if (child_num == 1 && children[0]->type == VarDec_SYNTAX) {
-
+        /* Dec -> VarDec
+           define local variable : int a */
     }
-    else if (child_num == 3 && children[0]->type == VarDec_SYNTAX && children[1]->type == ASSIGNOP_TOKEN && children[2]->type == Exp_SYNTAX) {
+    else if (child_num == 3 && children[0]->type == VarDec_SYNTAX       \
+        && children[1]->type == ASSIGNOP_TOKEN && children[2]->type == Exp_SYNTAX) {
+        /* Dec -> VarDec ASSIGNOP Exp
+           define local variable with initialization : int a=0 */
         sdt(children[2]);
         if (p_node->attr.is_in_struct) {
             print_error(15, children[1]->lineno, "Cannot initialize a field of structure");
             return;
         }
         if (children[2]->attr.is_legal) {
-            if (is_same_type(children[0]->attr.type, children[2]->attr.type)) 
+            if (is_same_type(children[0]->attr.type, children[2]->attr.type)) {
                 p_node->attr.type = children[0]->attr.type;
-            else 
+            }
+            else {
                 print_error(5, children[1]->lineno, "Type mismatched");
+            }
         }
     }
 }
 
 void handle_Exp(int child_num, ast_node *p_node, ast_node **children) {
-    if (child_num == 3 && children[0]->type == Exp_SYNTAX && children[1]->type == ASSIGNOP_TOKEN && children[2]->type == Exp_SYNTAX) {
+    if (child_num == 3 && children[0]->type == Exp_SYNTAX               \
+        && children[1]->type == ASSIGNOP_TOKEN && children[2]->type == Exp_SYNTAX) {
+        /* Exp -> Exp ASSIGNOP Exp */
         sdt(children[0]);
         sdt(children[2]);
         ast_node *grand_children[4], *grand_child = children[0]->lchild;
@@ -140,11 +161,14 @@ void handle_Exp(int child_num, ast_node *p_node, ast_node **children) {
             grand_children[grand_child_num ++] = grand_child;
             grand_child = grand_child->next_sib;
         }
-        if (!(grand_child_num == 1 && grand_children[0]->type == ID_TOKEN || grand_child_num == 4 && grand_children[0]->type == Exp_SYNTAX && grand_children[1]->type == LB_TOKEN && grand_children[2]->type == Exp_SYNTAX && grand_children[3]->type == RB_TOKEN || grand_child_num == 3 && grand_children[0]->type == Exp_SYNTAX && grand_children[1]->type == DOT_TOKEN && grand_children[2]->type == ID_TOKEN)) {
+        if (!(grand_child_num == 1 && grand_children[0]->type == ID_TOKEN \
+                || grand_child_num == 4 && grand_children[0]->type == Exp_SYNTAX && grand_children[1]->type == LB_TOKEN && grand_children[2]->type == Exp_SYNTAX && grand_children[3]->type == RB_TOKEN \
+                || grand_child_num == 3 && grand_children[0]->type == Exp_SYNTAX && grand_children[1]->type == DOT_TOKEN && grand_children[2]->type == ID_TOKEN)) {
             print_error(6, children[0]->lineno, "Assign to right value");
             p_node->attr.is_legal = FALSE;
             return;
-        }
+        }// end of if not left value
+
         if (children[0]->attr.is_legal && children[2]->attr.is_legal) {
             if (is_same_type(children[0]->attr.type, children[2]->attr.type)) {
                 p_node->attr.type = children[0]->attr.type;
@@ -155,51 +179,78 @@ void handle_Exp(int child_num, ast_node *p_node, ast_node **children) {
                 p_node->attr.is_legal = FALSE;
             }
         }
-        else
+        else {
             p_node->attr.is_legal = FALSE;
-    }
-    else if (child_num == 3 && children[0]->type == Exp_SYNTAX && children[1]->type == AND_TOKEN && children[2]->type == Exp_SYNTAX) {
+        }
+    }// end of if Exp -> Exp ASSIGNOP Exp
+
+    else if (child_num == 3 && children[0]->type == Exp_SYNTAX          \
+        && children[1]->type == AND_TOKEN && children[2]->type == Exp_SYNTAX) {
+        /* Exp -> Exp AND Exp */
         check_type_match(p_node, children);
     }
-    else if (child_num == 3 && children[0]->type == Exp_SYNTAX && children[1]->type == OR_TOKEN && children[2]->type == Exp_SYNTAX) {
+    else if (child_num == 3 && children[0]->type == Exp_SYNTAX          \
+        && children[1]->type == OR_TOKEN && children[2]->type == Exp_SYNTAX) {
+        /* Exp -> Exp OR Exp */
         check_type_match(p_node, children);
     }
-    else if (child_num == 3 && children[0]->type == Exp_SYNTAX && children[1]->type == RELOP_TOKEN && children[2]->type == Exp_SYNTAX) {
+    else if (child_num == 3 && children[0]->type == Exp_SYNTAX          \
+        && children[1]->type == RELOP_TOKEN && children[2]->type == Exp_SYNTAX) {
+        /* Exp -> Exp RELOP Exp */
         check_type_match(p_node, children);
     }
-    else if (child_num == 3 && children[0]->type == Exp_SYNTAX && children[1]->type == PLUS_TOKEN && children[2]->type == Exp_SYNTAX) {
+    else if (child_num == 3 && children[0]->type == Exp_SYNTAX          \
+        && children[1]->type == PLUS_TOKEN && children[2]->type == Exp_SYNTAX) {
+        /* Exp -> Exp PLUS Exp */
         check_type_match(p_node, children);
     }
-    else if (child_num == 3 && children[0]->type == Exp_SYNTAX && children[1]->type == MINUS_TOKEN && children[2]->type == Exp_SYNTAX) {
+    else if (child_num == 3 && children[0]->type == Exp_SYNTAX          \
+        && children[1]->type == MINUS_TOKEN && children[2]->type == Exp_SYNTAX) {
+        /* Exp -> Exp MINUS Exp */
         check_type_match(p_node, children);
     }
-    else if (child_num == 3 && children[0]->type == Exp_SYNTAX && children[1]->type == STAR_TOKEN && children[2]->type == Exp_SYNTAX) {
+    else if (child_num == 3 && children[0]->type == Exp_SYNTAX          \
+        && children[1]->type == STAR_TOKEN && children[2]->type == Exp_SYNTAX) {
+        /* Exp -> Exp STAR Exp */
         check_type_match(p_node, children);
     }
-    else if (child_num == 3 && children[0]->type == Exp_SYNTAX && children[1]->type == DIV_TOKEN && children[2]->type == Exp_SYNTAX) {
+    else if (child_num == 3 && children[0]->type == Exp_SYNTAX          \
+        && children[1]->type == DIV_TOKEN && children[2]->type == Exp_SYNTAX) {
+        /* Exp -> Exp DIV Exp */
         check_type_match(p_node, children);
     }
-    else if (child_num == 3 && children[0]->type == LP_TOKEN && children[1]->type == Exp_SYNTAX && children[2]->type == RP_TOKEN) {
+    else if (child_num == 3 && children[0]->type == LP_TOKEN            \
+        && children[1]->type == Exp_SYNTAX && children[2]->type == RP_TOKEN) {
+        /* Exp -> LP Exp RP */
         sdt(children[1]);
         p_node->attr.is_legal = children[1]->attr.is_legal;
         p_node->attr.type = children[1]->attr.type;
     }
-    else if (child_num == 2 && children[0]->type == MINUS_TOKEN && children[1]->type == Exp_SYNTAX) {
+    else if (child_num == 2 && children[0]->type == MINUS_TOKEN \
+        && children[1]->type == Exp_SYNTAX) {
+        /* Exp -> MINUS Exp */
         sdt(children[1]);
         p_node->attr.is_legal = children[1]->attr.is_legal;
         p_node->attr.type = children[1]->attr.type;
     }
-    else if (child_num == 2 && children[0]->type == NOT_TOKEN && children[1]->type == Exp_SYNTAX) {
+    else if (child_num == 2 && children[0]->type == NOT_TOKEN   \
+        && children[1]->type == Exp_SYNTAX) {
+        /* Exp -> NOT Exp */
         sdt(children[1]);
         p_node->attr.is_legal = children[1]->attr.is_legal;
         p_node->attr.type = children[1]->attr.type;
     }
-    else if (child_num == 4 && children[0]->type == ID_TOKEN && children[1]->type == LP_TOKEN && children[2]->type == Args_SYNTAX && children[3]->type == RP_TOKEN || child_num == 3 && children[0]->type == ID_TOKEN && children[1]->type == LP_TOKEN && children[2]->type == RP_TOKEN) {
+    else if (child_num == 4 && children[0]->type == ID_TOKEN && children[1]->type == LP_TOKEN \
+            && children[2]->type == Args_SYNTAX && children[3]->type == RP_TOKEN \
+        || child_num == 3 && children[0]->type == ID_TOKEN && children[1]->type == LP_TOKEN \
+            && children[2]->type == RP_TOKEN) {
+        /* Exp -> ID LP Args RP
+           the function call */
         ast_node *args = (child_num == 4) ? children[2] : NULL;
         symbol_node *func_node;
         if (func_node = get_symbol(children[0]->value.str_val)) {
             if (func_node->type == Var) {
-                print_error(11, children[0]->lineno, "Use a variable as function.");
+                print_error(11, children[0]->lineno, "Misused a variable as a function.");
                 p_node->attr.is_legal = FALSE;
             }
             else  {
@@ -227,14 +278,17 @@ void handle_Exp(int child_num, ast_node *p_node, ast_node **children) {
             p_node->attr.is_legal = FALSE;
         }
     }
-    else if (child_num == 4 && children[0]->type == Exp_SYNTAX && children[1]->type == LB_TOKEN && children[2]->type == Exp_SYNTAX && children[3]->type == RB_TOKEN) {
+    else if (child_num == 4 && children[0]->type == Exp_SYNTAX && children[1]->type == LB_TOKEN \
+        && children[2]->type == Exp_SYNTAX && children[3]->type == RB_TOKEN) {
+        /* Exp -> Exp LB Exp RB
+           the array var */
         sdt(children[0]);
         if (!children[0]->attr.is_legal) {
             p_node->attr.is_legal = FALSE;
             return;
         }
         if (children[0]->attr.type->kind != Array) {
-            print_error(10, children[0]->lineno, "Use a not-array variable as array");
+            print_error(10, children[0]->lineno, "Misused a non-array variable as an array");
             p_node->attr.is_legal = FALSE;
             return;
         }
@@ -252,14 +306,17 @@ void handle_Exp(int child_num, ast_node *p_node, ast_node **children) {
             p_node->attr.is_legal = FALSE;
         }
     }
-    else if (child_num == 3 && children[0]->type == Exp_SYNTAX && children[1]->type == DOT_TOKEN && children[2]->type == ID_TOKEN) {
+    else if (child_num == 3 && children[0]->type == Exp_SYNTAX          \
+        && children[1]->type == DOT_TOKEN && children[2]->type == ID_TOKEN) {
+        /* Exp -> Exp DOT ID
+           the struct var */
         sdt(children[0]);
         if (!children[0]->attr.is_legal) {
             p_node->attr.is_legal = FALSE;
             return;
         }
         if (children[0]->attr.type->kind != Structure) {
-            print_error(13, children[1]->lineno, "Left side of DOT is not a structure");
+            print_error(13, children[1]->lineno, "Left operand of DOT is not a structure");
             p_node->attr.is_legal = FALSE;
             return;
         }
@@ -280,6 +337,7 @@ void handle_Exp(int child_num, ast_node *p_node, ast_node **children) {
         }
     }
     else if (child_num == 1 && children[0]->type == ID_TOKEN) {
+        /* Exp -> ID */
         symbol_node *var_node;
         if (var_node = get_symbol(children[0]->value.str_val)) {
             p_node->attr.type = var_node->symbol.var_value.type;
@@ -292,11 +350,18 @@ void handle_Exp(int child_num, ast_node *p_node, ast_node **children) {
             p_node->attr.is_legal = FALSE;
         }
     }
+    else if (child_num == 1 && children[0]->type == CHAR_TOKEN) {
+        /* Exp -> CHAR : 'a' */
+        p_node->attr.type = p_char_type;
+        p_node->attr.is_legal = TRUE;
+    }
     else if (child_num == 1 && children[0]->type == INT_TOKEN) {
+        /* Exp -> INT : 1 */
         p_node->attr.type = p_int_type;
         p_node->attr.is_legal = TRUE;
     }
     else if (child_num == 1 && children[0]->type == FLOAT_TOKEN) {
+        /* Exp -> FLOAT : 0.1 */
         p_node->attr.type = p_float_type;
         p_node->attr.is_legal = TRUE;
     }
@@ -316,29 +381,39 @@ void handle_Args(int child_num, ast_node *p_node, ast_node **children) {
     }
 
     if (child_num == 3 && children[0]->type == Exp_SYNTAX && children[1]->type == COMMA_TOKEN && children[2]->type == Args_SYNTAX) {
+        /* Args -> Exp COMMA Args */
         children[2]->attr.inh_args = p_node->attr.inh_args->next;
         sdt(children[2]);
         p_node->attr.is_legal = children[2]->attr.is_legal;
     }
     else if (child_num == 1 && children[0]->type == Exp_SYNTAX) {
+        /* Args -> Exp */
         if (p_node->attr.inh_args->next) {
             print_error(9, p_node->lineno, "Argument number mismatched.");
             p_node->attr.is_legal = FALSE;
         }
-        else
+        else {
             p_node->attr.is_legal = TRUE;
+        }
     }
 }
 
 void handle_Specifier(int child_num, ast_node *p_node, ast_node **children) {
     if (child_num == 1 && children[0]->type == TYPE_TOKEN) {
-        if (children[0]->value.type_val == Int)
+        /* Specifier -> TYPE*/
+        if (children[0]->value.type_val == Char) {
+            p_node->attr.type = p_char_type;
+        }
+        else if (children[0]->value.type_val == Int) {
             p_node->attr.type = p_int_type;
-        else
+        }
+        else {
             p_node->attr.type = p_float_type;
+        }
         p_node->attr.is_legal = TRUE;
     }
     else if (child_num == 1 && children[0]->type == StructSpecifier_SYNTAX) {
+        /* Specifier -> StructSpecifier */
         sdt(children[0]);
         p_node->attr.type = children[0]->attr.type;
         p_node->attr.is_legal = children[0]->attr.is_legal;
@@ -346,7 +421,11 @@ void handle_Specifier(int child_num, ast_node *p_node, ast_node **children) {
 }
 
 void handle_StructSpecifier(int child_num, ast_node *p_node, ast_node **children) {
-    if (child_num == 5 && children[0]->type == STRUCT_TOKEN && children[1]->type == OptTag_SYNTAX && children[2]->type == LC_TOKEN && children[3]->type == DefList_SYNTAX && children[4]->type == RC_TOKEN) {
+    if (child_num == 5 && children[0]->type == STRUCT_TOKEN             \
+        && children[1]->type == OptTag_SYNTAX && children[2]->type == LC_TOKEN \
+        && children[3]->type == DefList_SYNTAX && children[4]->type == RC_TOKEN) {
+        /* StructSpecifier -> STRUCT OptTag LC DefList RC
+           struct definition */
         symbol_node *struct_node = get_symbol(children[1]->lchild->value.str_val);
         if (struct_node == NULL || struct_node && struct_node->depth < gl_cur_depth) {
             symbol_node *new_symbol = (symbol_node*)malloc(sizeof(symbol_node));
@@ -381,7 +460,10 @@ void handle_StructSpecifier(int child_num, ast_node *p_node, ast_node **children
             p_node->attr.is_legal = FALSE;
         }
     }
-    else if (child_num == 2 && children[0]->type == STRUCT_TOKEN && children[1]->type == Tag_SYNTAX) {
+    else if (child_num == 2 && children[0]->type == STRUCT_TOKEN    \
+        && children[1]->type == Tag_SYNTAX) {
+        /* StructSpecifier -> STRUCT Tag
+           struct declaration */
         symbol_node *struct_node;
         if (struct_node = get_symbol(children[1]->lchild->value.str_val)) {
             p_node->attr.type = struct_node->symbol.struct_value.structure;
@@ -395,7 +477,10 @@ void handle_StructSpecifier(int child_num, ast_node *p_node, ast_node **children
 }
 
 void handle_ExtDecList(int child_num, ast_node *p_node, ast_node **children) {
-    if (child_num == 3 && children[0]->type == VarDec_SYNTAX && children[1]->type == COMMA_TOKEN && children[2]->type == ExtDecList_SYNTAX) {
+    if (child_num == 3 && children[0]->type == VarDec_SYNTAX            \
+        && children[1]->type == COMMA_TOKEN && children[2]->type == ExtDecList_SYNTAX) {
+        /* ExtDecList -> VarDec COMMA ExtDecList
+           global var definition list : a,b,c[3][5] */
         children[0]->attr.inh_type = p_node->attr.inh_type;
         sdt(children[0]);
         children[1]->attr.inh_type = p_node->attr.inh_type;
@@ -409,6 +494,7 @@ void handle_ExtDecList(int child_num, ast_node *p_node, ast_node **children) {
 
 void handle_VarDec(int child_num, ast_node *p_node, ast_node **children) {
     if (child_num == 1 && children[0]->type == ID_TOKEN) {
+        /* VarDec -> ID */
         p_node->attr.type = p_node->attr.inh_type;
         p_node->attr.id = children[0]->value.str_val;
         if (p_node->attr.is_in_struct) {
@@ -431,7 +517,11 @@ void handle_VarDec(int child_num, ast_node *p_node, ast_node **children) {
             print_error(3, children[0]->lineno, "Variable redefined.");
         }
     }
-    else if (child_num == 4 && children[0]->type == VarDec_SYNTAX && children[1]->type == LB_TOKEN && children[2]->type == INT_TOKEN && children[3]->type == RB_TOKEN) {
+    else if (child_num == 4 && children[0]->type == VarDec_SYNTAX       \
+        && children[1]->type == LB_TOKEN && children[2]->type == INT_TOKEN \
+        && children[3]->type == RB_TOKEN) {
+        /* VarDec -> VarDec LB INT RB
+           array definition : a[10][20] */
         Type *type_node = (Type*)malloc(sizeof(Type));
         type_node->kind = Array;
         type_node->u.array.elem = p_node->attr.inh_type;
@@ -447,7 +537,10 @@ void handle_VarDec(int child_num, ast_node *p_node, ast_node **children) {
 
 void handle_FunDec(int child_num, ast_node *p_node, ast_node **children) {
     symbol_node *func_node = get_symbol(children[0]->value.str_val);
-    if (p_node->attr.is_definition && (func_node && func_node->type != Func || func_node && func_node->type == Func && func_node->symbol.func_value.is_defined)) {
+    if (p_node->attr.is_definition                  \
+        && (func_node && func_node->type != Func                        \
+            || func_node && func_node->type == Func && func_node->symbol.func_value.is_defined))
+    {
         enter_deeper_scope();
         print_error(4, children[0]->lineno, "Function redefined.");
         return;
@@ -470,19 +563,27 @@ void handle_FunDec(int child_num, ast_node *p_node, ast_node **children) {
         p_node->attr.is_declared = TRUE;
     }
     enter_deeper_scope();
-    if (child_num == 4 && children[0]->type == ID_TOKEN && children[1]->type == LP_TOKEN && children[2]->type == VarList_SYNTAX && children[3]->type == RP_TOKEN) {
+    if (child_num == 4 && children[0]->type == ID_TOKEN && children[1]->type == LP_TOKEN \
+        && children[2]->type == VarList_SYNTAX && children[3]->type == RP_TOKEN) {
+        /* FunDec -> ID LP VarList RP
+           function with params : func(int a, float b[10]) */
         if (p_node->attr.is_declared) {
             children[2]->attr.args = func_node->symbol.func_value.args;
         }
         children[2]->attr.is_definition = p_node->attr.is_definition;
         children[2]->attr.is_declared = p_node->attr.is_declared;
         sdt(children[2]);
-        if (!p_node->attr.is_declared)
+        if (!p_node->attr.is_declared) {
             func_node->symbol.func_value.args = children[2]->attr.args;
-        else
+        }
+        else {
             p_node->attr.is_legal = children[2]->attr.is_legal;
+        }
     }
-    else if (child_num == 3 && children[0]->type == ID_TOKEN && children[1]->type == LP_TOKEN && children[2]->type == RP_TOKEN) {
+    else if (child_num == 3 && children[0]->type == ID_TOKEN && children[1]->type == LP_TOKEN \
+        && children[2]->type == RP_TOKEN) {
+        /* FunDec -> ID LP RP
+           function without params : func() */
         if (p_node->attr.is_declared) {
             if (func_node->symbol.func_value.args) {
                 print_error(19, children[0]->lineno, "Argument number conflict");
@@ -495,10 +596,12 @@ void handle_FunDec(int child_num, ast_node *p_node, ast_node **children) {
         }
     }
     if (p_node->attr.is_definition) {
-        if (p_node->attr.is_declared)
+        if (p_node->attr.is_declared) {
             func_node->symbol.func_value.is_defined = p_node->attr.is_legal;
-        else
+        }
+        else {
             func_node->symbol.func_value.is_defined = TRUE;
+        }
     }
 }
 
@@ -524,7 +627,10 @@ void handle_VarList(int child_num, ast_node *p_node, ast_node **children) {
         if (!children[0]->attr.is_legal)
             p_node->attr.is_legal = FALSE;
     }
-    if (child_num == 3 && children[0]->type == ParamDec_SYNTAX && children[1]->type == COMMA_TOKEN && children[2]->type == VarList_SYNTAX) {
+    if (child_num == 3 && children[0]->type == ParamDec_SYNTAX          \
+        && children[1]->type == COMMA_TOKEN && children[2]->type == VarList_SYNTAX) {
+        /* VarList -> ParamDec COMMA VarList
+           function param(formal) definition list */
         if (p_node->attr.is_declared) {
             children[2]->attr.args = p_node->attr.args->next;
         }
@@ -539,6 +645,8 @@ void handle_VarList(int child_num, ast_node *p_node, ast_node **children) {
         }
     }
     else if (child_num == 1 && children[0]->type == ParamDec_SYNTAX) {
+        /* VarList -> ParamDec
+           one param(formal) definition */
         if (p_node->attr.is_declared) {
             if (p_node->attr.args->next)
                 print_error(19, children[0]->lineno, "Argument number conflict");
@@ -549,7 +657,9 @@ void handle_VarList(int child_num, ast_node *p_node, ast_node **children) {
 }
 
 void handle_ParamDec(int child_num, ast_node *p_node, ast_node **children) {
-    if (child_num == 2 && children[0]->type == Specifier_SYNTAX && children[1]->type == VarDec_SYNTAX) {
+    if (child_num == 2 && children[0]->type == Specifier_SYNTAX \
+        && children[1]->type == VarDec_SYNTAX) {
+        /* ParamDec ->Specifier VarDec */
         sdt(children[0]);
         children[1]->attr.inh_type = children[0]->attr.type;
         sdt(children[1]);
@@ -565,7 +675,11 @@ void handle_ParamDec(int child_num, ast_node *p_node, ast_node **children) {
 }
 
 void handle_CompSt(int child_num, ast_node *p_node, ast_node **children) {
-    if (child_num == 4 && children[0]->type == LC_TOKEN && children[1]->type == DefList_SYNTAX && children[2]->type == StmtList_SYNTAX && children[3]->type == RC_TOKEN) {
+    if (child_num == 4 && children[0]->type == LC_TOKEN && children[1]->type == DefList_SYNTAX \
+        && children[2]->type == StmtList_SYNTAX && children[3]->type == RC_TOKEN) {
+        /* CompSt -> LC DefList StmtList RC
+           block with braces : { def; stmt; }
+           do not allow def after stmt */
         children[1]->attr.is_in_struct = FALSE;
         sdt(children[1]);
         children[2]->attr.ret_type = p_node->attr.ret_type;
@@ -574,7 +688,9 @@ void handle_CompSt(int child_num, ast_node *p_node, ast_node **children) {
 }
 
 void handle_StmtList(int child_num, ast_node *p_node, ast_node **children) {
-    if (child_num == 2 && children[0]->type == Stmt_SYNTAX && children[1]->type == StmtList_SYNTAX) {
+    if (child_num == 2 && children[0]->type == Stmt_SYNTAX  \
+        && children[1]->type == StmtList_SYNTAX) {
+        /* StmtList -> Stmt StmtList */
         children[0]->attr.ret_type = p_node->attr.ret_type;
         sdt(children[0]);
         children[1]->attr.ret_type = p_node->attr.ret_type;

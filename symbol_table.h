@@ -43,7 +43,7 @@ typedef struct type_list_ {
     Type *data;
     struct type_list_ *next;
 } type_list;
-Type *p_int_type, *p_float_type;
+Type *p_char_type, *p_int_type, *p_float_type;
 extern type_list gl_type_stack[MAX_SCOPE_DEPTH];
 /* Variables */
 extern hash_node gl_scope_stack[MAX_SCOPE_DEPTH];

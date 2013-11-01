@@ -2,9 +2,9 @@
 #include "defs.h"
 #include <stdio.h>
 
-#ifdef PRINT_AST
+// #ifdef PRINT_AST
 bool gl_error_exist = FALSE;
-#endif
+// #endif
 
 void reportError(int errorcode, int lineno, int column,  const char *msg)
 {

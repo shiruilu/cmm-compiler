@@ -1,6 +1,8 @@
 #ifndef _TYPE_H_
 #define _TYPE_H_
 
+#include "defs.h"
+
 typedef enum {Char, Int, Float} basic_type;
 typedef struct FieldList_ FieldList;
 typedef struct Type_ Type;
@@ -26,5 +28,7 @@ typedef struct arg_node_ {
     Type * type;
     struct arg_node_ * next;
 } arg_node;
+
+bool is_same_type(Type *a, Type *b);
 
 #endif

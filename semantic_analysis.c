@@ -1,4 +1,5 @@
 #include "ast.h"
+#include "type.h"
 #include "ErrorHandler.h"
 #include "symbol_table.h"
 #include "semantic_analysis.h"
@@ -702,7 +703,9 @@ void handle_StmtList(int child_num, ast_node *p_node, ast_node **children) {
 }
 
 void handle_DefList(int child_num, ast_node *p_node, ast_node **children) {
-    if (child_num == 2 && children[0]->type == Def_SYNTAX && children[1]->type == DefList_SYNTAX) {
+    if (child_num == 2 && children[0]->type == Def_SYNTAX   \
+        && children[1]->type == DefList_SYNTAX) {
+        /* DefList -> Def DefList */
         children[0]->attr.is_in_struct = p_node->attr.is_in_struct;
         sdt(children[0]);
         children[1]->attr.is_in_struct = p_node->attr.is_in_struct;
@@ -715,6 +718,7 @@ void handle_DefList(int child_num, ast_node *p_node, ast_node **children) {
         }
     }
     else if (child_num == 0) {
+        /* DefList -> (empty) */
         if (p_node->attr.is_in_struct) {
             p_node->attr.structure = NULL;
         }
@@ -722,13 +726,18 @@ void handle_DefList(int child_num, ast_node *p_node, ast_node **children) {
 }
 
 void handle_Stmt(int child_num, ast_node *p_node, ast_node **children) {
-    if (child_num == 3 && children[0]->type == RETURN_TOKEN && children[1]->type == Exp_SYNTAX && children[2]->type == SEMI_TOKEN) {
+    if (child_num == 3 && children[0]->type == RETURN_TOKEN             \
+        && children[1]->type == Exp_SYNTAX && children[2]->type == SEMI_TOKEN) {
+        /* Stmt -> RETURN Exp SEMI
+           return statment of a function */
         sdt(children[1]);
         if (!is_same_type(children[1]->attr.type, p_node->attr.ret_type)) {
             print_error(8, children[1]->lineno, "Return type mismatched.");
         }
     }
     else if (child_num == 1 && children[0]->type == CompSt_SYNTAX) {
+        /* Stmt -> CompSt
+           statment block */
         enter_deeper_scope();
         sdt(children[0]);
         exit_top_scope();

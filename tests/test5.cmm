@@ -1,7 +1,0 @@
-int main() {
-    //int x = 3;
-    float a = 3.5;
-    /* /*float b = 4.0;*/ */
-    return 0;
-}
-//1 < 2

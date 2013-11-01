@@ -1,13 +1,15 @@
 CC = gcc
 LEX = flex
 YACC = bison
-CFLAGS = -Wall
+CFLAGS = 
 YFLAGS = -d -v
 LIB = -lfl -ly
 
-HEADERS = defs.h ErrorHandler.h ast.h type.h semantic_analysis.h symbol_table.h
+HEADERS = defs.h ErrorHandler.h ast.h type.h semantic_analysis.h symbol_table.h\
+			type.h
 
 OBJS = defs.o\
+	type.o\
 	ErrorHandler.o\
 	parser.tab.o\
 	semantic_analysis.o\
@@ -17,7 +19,8 @@ OBJS = defs.o\
 
 parser : defs.o ErrorHandler.o parser.tab.o semantic_analysis.o symbol_table.o\
 		ast.o main.o lex.yy.c $(HEADERS)
-	$(CC) defs.o ErrorHandler.o parser.tab.o ast.o main.o $(CFLAGS) $(LIB) -o parser
+	$(CC) defs.o ErrorHandler.o parser.tab.o semantic_analysis.o symbol_table.o\
+			ast.o type.o main.o $(CFLAGS) $(LIB) -o parser
 scanner	: lexmain.c lex.yy.c
 	$(CC) lex.yy.c lexmain.c $(CFLAGS) -lfl -o scanner
 main.o : main.c $(HEADERS)
@@ -30,10 +33,13 @@ parser.tab.o: parser.tab.c $(HEADERS)
 	$(CC) $(CFLAGS) $(LIB) parser.tab.c -c
 symbol_table.o : symbol_table.c symbol_table.h defs.h type.h
 	$(CC) $(CFLAGS) $(LIB) symbol_table.c -c
-semantic_analysis.o : semantic_analysis.c semantic_analysis.h ast.h symbol_table.h
+semantic_analysis.o : semantic_analysis.c semantic_analysis.h ast.h	\
+					symbol_table.h type.h ErrorHandler.h
 	$(CC) $(CFLAGS) $(LIB) semantic_analysis.c -c
 ast.o : ast.c ast.h defs.h parser.tab.h type.h
 	$(CC) $(CFLAGS) ast.c -c
+type.o : type.c type.h
+	$(CC) $(CFLAGS) type.c -c
 parser.tab.c : lex.yy.c parser.y $(HEADERS)
 	$(YACC) $(YFLAGS) parser.y
 lex.yy.c : parser.tab.h scanner.l $(HEADERS)

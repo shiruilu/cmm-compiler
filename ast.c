@@ -38,7 +38,7 @@ past_node create_token(node_type type)
 	p->lchild = p->next_sib = NULL;
 	p->lineno = yylineno;
 	p->column = yylloc.first_column;
-	
+
 	return p;
 }
 
@@ -47,7 +47,7 @@ past_node create_syntax(node_type type, int argno, ...)
 	past_node p = (past_node)ck_malloc(sizeof(ast_node));
 	p->type = type;
 	p->lchild = p->next_sib = NULL;
-	
+
 	va_list argp;
 	va_start(argp, argno);
 
@@ -82,10 +82,11 @@ past_node create_syntax(node_type type, int argno, ...)
 	return p;
 }
 
+#ifdef PRINT_AST
 void print_ast(past_node p_node, int spaces)
 {
 	if ( p_node ) {
-		
+
 		// fprintf(stdout, "@%d ", spaces);
 		if ( p_node->lchild || p_node->type <Program_SYNTAX ) {
 			/* not syntax node generated eps, print */
@@ -130,6 +131,7 @@ void print_ast(past_node p_node, int spaces)
 		print_ast(p_node->next_sib, spaces);
 	}
 }
+#endif
 
 void free_ast_tree(past_node p_root)
 {

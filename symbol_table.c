@@ -104,3 +104,10 @@ void insert_symbol(symbol_node *p_symbol) {
     new_node->scope_next = gl_scope_stack[gl_cur_depth].scope_next;
     gl_scope_stack[gl_cur_depth].scope_next = new_node;
 }
+
+void insert_type(Type *data) {
+    type_list *new_type = (type_list*)malloc(sizeof(type_list));
+    new_type->data = data;
+    new_type->next = gl_type_stack[gl_cur_depth].next;
+    gl_type_stack[gl_cur_depth].next = new_type;
+}

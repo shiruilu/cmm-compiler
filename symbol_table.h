@@ -6,6 +6,7 @@
 
 #define SYMBOL_TABLE_LEN 0x4000
 #define MAX_SCOPE_DEPTH 20
+#define MAX_SYMBOL_NAME 32
 
 /* Symbols */
 typedef struct {
@@ -24,7 +25,7 @@ typedef struct {
 } func_symbol;
 
 typedef struct symbol_node_ {
-    string key;
+    char key[MAX_SYMBOL_NAME];
     unsigned int depth;
     enum { Var, Struct, Func } type;
     union {

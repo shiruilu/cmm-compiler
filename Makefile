@@ -1,8 +1,9 @@
 CC = gcc
 LEX = flex
 YACC = bison
-CFLAGS = 
+CFLAGS = -g
 YFLAGS = -d -v
+DEBUGFLAGS = -g
 LIB = -lfl -ly
 
 HEADERS = defs.h ErrorHandler.h ast.h type.h semantic_analysis.h symbol_table.h\
@@ -19,7 +20,7 @@ OBJS = defs.o\
 
 parser : defs.o ErrorHandler.o parser.tab.o semantic_analysis.o symbol_table.o\
 		ast.o main.o lex.yy.c $(HEADERS)
-	$(CC) defs.o ErrorHandler.o parser.tab.o semantic_analysis.o symbol_table.o\
+	$(CC) $(DEBUGFLAGS) defs.o ErrorHandler.o parser.tab.o semantic_analysis.o symbol_table.o\
 			ast.o type.o main.o $(CFLAGS) $(LIB) -o parser
 scanner	: lexmain.c lex.yy.c
 	$(CC) lex.yy.c lexmain.c $(CFLAGS) -lfl -o scanner

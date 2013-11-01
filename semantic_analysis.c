@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <string.h>
+#include <assert.h>
+
+#define MAX_ERROR_STR 128
 
 void print_error(int type, int lineno, char *msg) {
     gl_error_exist = TRUE;
@@ -445,7 +448,9 @@ void handle_StructSpecifier(int child_num, ast_node *p_node, ast_node **children
                 FieldList *pre_field = children[3]->attr.structure;
                 while (pre_field != field) {
                     if (strcmp(pre_field->id, field->id) == 0) {
-                        print_error(15, field->lineno, "Field redefined.");
+                        char red_field_msg[MAX_ERROR_STR];
+                        sprintf(red_field_msg, "Redefined field \"%s\".", field->id);
+                        print_error(15, field->lineno, red_field_msg);
                         break;
                     }
                     pre_field = pre_field->next;
@@ -455,9 +460,11 @@ void handle_StructSpecifier(int child_num, ast_node *p_node, ast_node **children
             }
             p_node->attr.type->u.structure = children[3]->attr.structure;
             p_node->attr.is_legal = TRUE;
-        }
+        }// end of if(struct_node == NULL ...)
         else {
-            print_error(16, children[1]->lineno, "Structure redefined.");
+            char red_struct_msg[MAX_ERROR_STR];
+            sprintf(red_struct_msg, "Redefined structure \"%s\".", struct_node->key);
+            print_error(16, children[1]->lineno, red_struct_msg);
             p_node->attr.is_legal = FALSE;
         }
     }
@@ -515,7 +522,9 @@ void handle_VarDec(int child_num, ast_node *p_node, ast_node **children) {
             insert_symbol(new_symbol);
         }
         else {
-            print_error(3, children[0]->lineno, "Variable redefined.");
+            char red_var_msg[MAX_ERROR_STR];
+            sprintf(red_var_msg, "Redefined variable \"%s\".", var_node->key);
+            print_error(3, children[0]->lineno, red_var_msg);
         }
     }
     else if (child_num == 4 && children[0]->type == VarDec_SYNTAX       \
@@ -543,7 +552,9 @@ void handle_FunDec(int child_num, ast_node *p_node, ast_node **children) {
             || func_node && func_node->type == Func && func_node->symbol.func_value.is_defined))
     {
         enter_deeper_scope();
-        print_error(4, children[0]->lineno, "Function redefined.");
+        char red_fun_msg[MAX_ERROR_STR];
+        sprintf(red_fun_msg, "Redefined function \"%s\".", func_node->key);
+        print_error(4, children[0]->lineno, red_fun_msg);
         return;
     }
     if (func_node == NULL) {

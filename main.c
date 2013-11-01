@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <malloc.h>
 #include "defs.h"
 #include "ast.h"
 #include "ErrorHandler.h"
@@ -44,7 +45,9 @@ int main(int argc, char** argv)
         insert_type(p_int_type);
         insert_type(p_float_type);
 
+        //printf("before sdt\n");
         sdt(gl_ast_root);
+        //printf("before chk undef func\n");
         check_undef_func();
         exit_top_scope();
     }

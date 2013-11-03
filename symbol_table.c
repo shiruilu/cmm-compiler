@@ -6,6 +6,7 @@ type_list gl_type_stack[MAX_SCOPE_DEPTH];
 hash_node gl_symbol_table[SYMBOL_TABLE_LEN];
 hash_node gl_scope_stack[MAX_SCOPE_DEPTH];
 unsigned int gl_cur_depth;
+Type *p_char_type, *p_int_type, *p_float_type;
 
 unsigned int hash_pjw(char * name)
 {

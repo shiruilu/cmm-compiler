@@ -49,6 +49,7 @@ ExtDefList  :   ExtDef  ExtDefList { $$ = create_syntax(ExtDefList_SYNTAX, 2, $1
 ExtDef  :   Specifier ExtDecList SEMI { $$ = create_syntax(ExtDef_SYNTAX, 3, $1, $2, $3); }
         |   Specifier SEMI { $$ = create_syntax(ExtDef_SYNTAX, 2, $1, $2); }
         |   Specifier FunDec CompSt { $$ = create_syntax(ExtDef_SYNTAX, 3, $1, $2, $3); }
+        |   Specifier FunDec SEMI { $$ = create_syntax(ExtDef_SYNTAX, 3, $1, $2, $3); }
         |   error SEMI { yyerrok; /* call yyerror() */ }
         ;
 
@@ -135,9 +136,9 @@ Exp :   Exp ASSIGNOP Exp { $$ = create_syntax(Exp_SYNTAX, 3, $1, $2, $3); }
     |   Exp LB Exp RB { $$ = create_syntax(Exp_SYNTAX, 4, $1, $2, $3, $4); }
     |   Exp DOT ID { $$ = create_syntax(Exp_SYNTAX, 3, $1, $2, $3); }
     |   ID { $$ = create_syntax(Exp_SYNTAX, 1, $1); }
+    |   CHAR { $$ = create_syntax(Exp_SYNTAX, 1, $1); }
     |   INT { $$ = create_syntax(Exp_SYNTAX, 1, $1); }
     |   FLOAT { $$ = create_syntax(Exp_SYNTAX, 1, $1); }
-    |   CHAR { $$ = create_syntax(Exp_SYNTAX, 1, $1); }
     ;
 
 Args    :   Exp COMMA Args { $$ = create_syntax(Args_SYNTAX, 3, $1, $2, $3); }

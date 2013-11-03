@@ -3,13 +3,15 @@
 
 #include "defs.h"
 
+#define MAX_SYMBOL_NAME 32
+
 typedef enum {Char, Int, Float} basic_type;
 typedef struct FieldList_ FieldList;
 typedef struct Type_ Type;
 
 /* Definations */
 struct FieldList_ {
-    string id;
+    char id[MAX_SYMBOL_NAME];
     int lineno;
     Type * type;
     FieldList * next;

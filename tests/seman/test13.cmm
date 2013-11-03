@@ -6,5 +6,5 @@ struct Position
 int main()
 {
         int i;
-        i.x
+        i.x;
 }

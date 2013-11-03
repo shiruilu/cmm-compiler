@@ -1,0 +1,47 @@
+test10.cmm :
+Error type 10 at 4:0 Misused a non-array variable as an array
+test11.cmm :
+Error type 11 at 4:0 Misused a variable as a function.
+test12.cmm :
+Error type 12 at 4:0 Array index is not integer
+test13.cmm :
+Error type 13 at 9:0 Left operand of DOT is not a structure
+test14.cmm :
+Error type 14 at 9:0 Structure field undefined.
+test15.cmm :
+Error type 15 at 4:0 Redefined field "x".
+test16.cmm :
+Error type 16 at 6:0 Redefined structure "Position".
+test17.cmm :
+Error type 17 at 3:0 Undefined structure
+test1.cmm :
+Error type 1 at 4:0 Undefined variable "j"
+test2.cmm :
+Error type 2 at 4:0 Undefined function "inc"
+test3.cmm :
+Error type 3 at 4:0 Redefined variable "i".
+test4.cmm :
+Error type 4 at 6:0 Redefined function "func".
+test5.cmm :
+Error type 5 at 4:0 Type not matched
+test6.cmm :
+Error type 6 at 4:0 Assign to right value
+test7.cmm :
+Error type 7 at 4:0 Type not matched
+test8.cmm :
+Error type 8 at 4:0 Return type not matched.
+test9.cmm :
+Error type 9 at 8:0 Argument number not matched.
+test_main_ret.cmm :
+test_s1.cmm :
+test_s2.cmm :
+Error type 19 at 8:0 Argument type conflict
+Error type 18 at 6:0 Function undefined
+test_s3.cmm :
+test_s4.cmm :
+Error type 3 at 10:0 Redefined variable "i".
+test_s5.cmm :
+test_s6.cmm :
+Error type 5 at 16:0 Type not matched
+test_undef.cmm :
+Error type 1 at 3:0 Undefined variable "j"

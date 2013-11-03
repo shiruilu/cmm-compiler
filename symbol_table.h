@@ -6,7 +6,7 @@
 
 #define SYMBOL_TABLE_LEN 0x4000
 #define MAX_SCOPE_DEPTH 20
-#define MAX_SYMBOL_NAME 32
+//#define MAX_SYMBOL_NAME 32
 
 /* Symbols */
 typedef struct {
@@ -44,7 +44,7 @@ typedef struct type_list_ {
     Type *data;
     struct type_list_ *next;
 } type_list;
-Type *p_char_type, *p_int_type, *p_float_type;
+extern Type *p_char_type, *p_int_type, *p_float_type;
 extern type_list gl_type_stack[MAX_SCOPE_DEPTH];
 /* Variables */
 extern hash_node gl_scope_stack[MAX_SCOPE_DEPTH];

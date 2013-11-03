@@ -19,7 +19,7 @@ OBJS = defs.o\
 	main.o
 
 parser : defs.o ErrorHandler.o parser.tab.o semantic_analysis.o symbol_table.o\
-		ast.o main.o lex.yy.c $(HEADERS)
+		ast.o type.o main.o lex.yy.c $(HEADERS)
 	$(CC) $(DEBUGFLAGS) defs.o ErrorHandler.o parser.tab.o semantic_analysis.o symbol_table.o\
 			ast.o type.o main.o $(CFLAGS) $(LIB) -o parser
 scanner	: lexmain.c lex.yy.c

@@ -147,7 +147,7 @@ void handle_Dec(int child_num, ast_node *p_node, ast_node **children) {
                 p_node->attr.type = children[0]->attr.type;
             }
             else {
-                print_error(5, children[1]->lineno, "Type mismatched");
+                print_error(5, children[1]->lineno, "Type not matched");
             }
         }
     }
@@ -179,7 +179,7 @@ void handle_Exp(int child_num, ast_node *p_node, ast_node **children) {
                 p_node->attr.is_legal = TRUE;
             }
             else {
-                print_error(5, children[1]->lineno, "Type mismatched");
+                print_error(5, children[1]->lineno, "Type not matched");
                 p_node->attr.is_legal = FALSE;
             }
         }
@@ -267,7 +267,7 @@ void handle_Exp(int child_num, ast_node *p_node, ast_node **children) {
                 }
                 else {
                     if (func_node->symbol.func_value.args) {
-                        print_error(9, p_node->lineno, "Argument number mismatched.");
+                        print_error(9, p_node->lineno, "Argument number not matched.");
                         p_node->attr.is_legal = FALSE;
                     }
                     else
@@ -374,12 +374,12 @@ void handle_Exp(int child_num, ast_node *p_node, ast_node **children) {
 void handle_Args(int child_num, ast_node *p_node, ast_node **children) {
     sdt(children[0]);
     if (p_node->attr.inh_args == NULL) {
-        print_error(9, children[0]->lineno, "Argument number mismatched.");
+        print_error(9, children[0]->lineno, "Argument number not matched.");
         p_node->attr.is_legal = FALSE;
         return;
     }
     if (!is_same_type(p_node->attr.inh_args->type, children[0]->attr.type)) {
-        print_error(9, children[0]->lineno, "Argument type mismatched.");
+        print_error(9, children[0]->lineno, "Argument type not matched.");
         p_node->attr.is_legal = FALSE;
         return;
     }
@@ -393,7 +393,7 @@ void handle_Args(int child_num, ast_node *p_node, ast_node **children) {
     else if (child_num == 1 && children[0]->type == Exp_SYNTAX) {
         /* Args -> Exp */
         if (p_node->attr.inh_args->next) {
-            print_error(9, p_node->lineno, "Argument number mismatched.");
+            print_error(9, p_node->lineno, "Argument number not matched.");
             p_node->attr.is_legal = FALSE;
         }
         else {
@@ -501,10 +501,12 @@ void handle_ExtDecList(int child_num, ast_node *p_node, ast_node **children) {
 }
 
 void handle_VarDec(int child_num, ast_node *p_node, ast_node **children) {
+    p_node->attr.is_legal = FALSE; // !!!!!!!
     if (child_num == 1 && children[0]->type == ID_TOKEN) {
         /* VarDec -> ID */
         p_node->attr.type = p_node->attr.inh_type;
         p_node->attr.id = children[0]->value.str_val;
+        p_node->attr.is_legal = TRUE; //!!!!!!!!!
         if (p_node->attr.is_in_struct) {
             p_node->attr.structure = (FieldList*)malloc(sizeof(FieldList));
             p_node->attr.structure->next = NULL;
@@ -520,6 +522,7 @@ void handle_VarDec(int child_num, ast_node *p_node, ast_node **children) {
             new_symbol->type = Var;
             new_symbol->symbol.var_value.type = p_node->attr.inh_type;
             insert_symbol(new_symbol);
+            p_node->attr.is_legal = TRUE; // !!!!!!!!!
         }
         else {
             char red_var_msg[MAX_ERROR_STR];
@@ -542,6 +545,7 @@ void handle_VarDec(int child_num, ast_node *p_node, ast_node **children) {
         sdt(children[0]);
         p_node->attr.type = children[0]->attr.type;
         p_node->attr.id = children[0]->attr.id;
+        p_node->attr.is_legal = children[0]->attr.is_legal; // !!!!!!!!!!!
     }
 }
 
@@ -681,8 +685,10 @@ void handle_ParamDec(int child_num, ast_node *p_node, ast_node **children) {
                 p_node->attr.is_legal = FALSE;
             }
         }
-        else 
+        else {
             p_node->attr.type = children[1]->attr.type;
+        }
+        p_node->attr.is_legal = children[1]->attr.is_legal; // !!!!!!!
     }
 }
 
@@ -743,7 +749,7 @@ void handle_Stmt(int child_num, ast_node *p_node, ast_node **children) {
            return statment of a function */
         sdt(children[1]);
         if (!is_same_type(children[1]->attr.type, p_node->attr.ret_type)) {
-            print_error(8, children[1]->lineno, "Return type mismatched.");
+            print_error(8, children[1]->lineno, "Return type not matched.");
         }
     }
     else if (child_num == 1 && children[0]->type == CompSt_SYNTAX) {
@@ -753,11 +759,46 @@ void handle_Stmt(int child_num, ast_node *p_node, ast_node **children) {
         sdt(children[0]);
         exit_top_scope();
     }
+    else if (child_num == 5 && children[0]->type == IF_TOKEN            \
+        && children[1]->type == LP_TOKEN && children[2]->type == Exp_SYNTAX \
+        && children[3]->type == RP_TOKEN && children[4]->type == Stmt_SYNTAX) {
+        /* Stmt -> IF LP Exp RP Stmt */
+        sdt(children[2]);
+        children[4]->attr.ret_type = p_node->attr.ret_type;
+        sdt(children[4]);
+    }
+    else if (child_num == 7 && children[0]->type == IF_TOKEN            \
+        && children[1]->type == LP_TOKEN && children[2]->type == Exp_SYNTAX \
+        && children[3]->type == RP_TOKEN && children[4]->type == Stmt_SYNTAX \
+        && children[5]->type == ELSE_TOKEN && children[6]->type == Stmt_SYNTAX) {
+        /* Stmt -> IF LP Exp RP Stmt ELSE Stmt */
+        sdt(children[2]);
+        children[4]->attr.ret_type = p_node->attr.ret_type;
+        sdt(children[4]);
+        children[6]->attr.ret_type = p_node->attr.ret_type;
+    }
+    else if (child_num == 5 && children[0]->type == WHILE_TOKEN            \
+        && children[1]->type == LP_TOKEN && children[2]->type == Exp_SYNTAX \
+        && children[3]->type == RP_TOKEN && children[4]->type == Stmt_SYNTAX) {
+        /* Stmt -> WHILE LP Exp RP Stmt */
+        sdt(children[2]);
+        children[4]->attr.ret_type = p_node->attr.ret_type;
+        sdt(children[4]);
+    }
+    else if (child_num == 2 && children[0]->type == Exp_SYNTAX  \
+        && children[1]->type == SEMI_TOKEN) {
+        /* Stmt -> Exp SEMI*/
+        sdt(children[0]);
+    }
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!
+       cause error when
+       return in deep if blocks
     else {
         int i;
         for (i = 0; i < child_num; ++ i)
             sdt(children[i]);
     }
+    */
 }
 
 #define MAX_CHILDREN 8

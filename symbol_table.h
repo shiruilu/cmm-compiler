@@ -3,6 +3,7 @@
 
 #include "defs.h"
 #include "type.h"
+#include "ir.h"
 
 #define SYMBOL_TABLE_LEN 0x4000
 #define MAX_SCOPE_DEPTH 20
@@ -11,6 +12,9 @@
 /* Symbols */
 typedef struct {
     Type *type;
+    // for ir
+    Operand *var_op;
+    unsigned char is_param;
 } var_symbol;
 
 typedef struct {
@@ -56,5 +60,7 @@ unsigned int hash_pjw(char * name);
 void init_symbol_table();
 void enter_deeper_scope();
 void exit_top_scope();
+symbol_node *get_symbol(char *name);
+void add_read_write_func();
 
 #endif

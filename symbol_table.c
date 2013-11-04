@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <malloc.h>
+#include <string.h>
 #include "symbol_table.h"
 
 type_list gl_type_stack[MAX_SCOPE_DEPTH];
@@ -112,3 +113,25 @@ void insert_type(Type *data) {
     new_type->next = gl_type_stack[gl_cur_depth].next;
     gl_type_stack[gl_cur_depth].next = new_type;
 }
+
+void add_read_write_func() {
+    symbol_node *read_func = (symbol_node*)malloc(sizeof(symbol_node));
+    strcpy(read_func->key, "read");
+    read_func->type = Func;
+    read_func->symbol.func_value.ret_type = p_int_type;
+    read_func->symbol.func_value.args = NULL;
+    read_func->symbol.func_value.is_defined = TRUE;
+
+    symbol_node *write_func = (symbol_node*)malloc(sizeof(symbol_node));
+    strcpy(write_func->key, "write");
+    write_func->type = Func;
+    write_func->symbol.func_value.ret_type = p_int_type;
+    write_func->symbol.func_value.args = (arg_node*)malloc(sizeof(arg_node));
+    write_func->symbol.func_value.args->type = p_int_type;
+    write_func->symbol.func_value.args->next = NULL;
+    write_func->symbol.func_value.is_defined = TRUE;
+
+    insert_symbol(read_func);
+    insert_symbol(write_func);
+}
+

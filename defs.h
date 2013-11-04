@@ -6,6 +6,7 @@
 
 #define TRUE 1
 #define FALSE 0
+#define MAX_SYMBOL_NAME 32
 
 typedef char* string;
 typedef unsigned char bool;

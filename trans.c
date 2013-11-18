@@ -89,9 +89,15 @@ InterCodeList *translate_Cond(ast_node *p_node,     \
 
     if (child_num == 3 && children[0]->type == Exp_SYNTAX               \
         && children[1]->type == RELOP_TOKEN && children[2]->type == Exp_SYNTAX) {
+        /* generate :
+           code1, (Exp cond1)
+           code2, (Exp cond2)
+           IF t1 kind t2 GOTO label_true (code3)
+           GOTO label_false
+        */
         Operand *t1 = new_temp(), *t2 = new_temp();
-        InterCodeList *code1 = translate_Exp(children[0], t1);
-        InterCodeList *code2 = translate_Exp(children[2], t2);
+        InterCodeList *code1 = translate_Exp(children[0], t1); // cond 1
+        InterCodeList *code2 = translate_Exp(children[2], t2); // cond 2
         code_kind kind;
         if (strcmp(children[1]->value.str_val, "==") == 0)
             kind = Equal;
@@ -112,10 +118,20 @@ InterCodeList *translate_Cond(ast_node *p_node,     \
     }
     else if (child_num == 2 && children[0]->type == NOT_TOKEN   \
         && children[1]->type == Exp_SYNTAX) {
+        /* inverse the true and false label */
         return translate_Cond(children[1], label_false, label_true);
     }
     else if (child_num == 3 && children[0]->type == Exp_SYNTAX          \
         && children[1]->type == AND_TOKEN && children[2]->type == Exp_SYNTAX) {
+        /* gen:
+           IF cond1 Goto label1
+           Goto label_false
+           label1
+           IF cond2 Goto label_true
+           label_true
+           ...
+           label_false
+         */
         Operand *label1 = new_label();
         InterCodeList *code1 = translate_Cond(children[0], label1, label_false);
         InterCodeList *code2 = translate_Cond(children[2], label_true, label_false);
@@ -128,7 +144,7 @@ InterCodeList *translate_Cond(ast_node *p_node,     \
         InterCodeList *code2 = translate_Cond(children[2], label_true, label_false);
         return link_inter_code(3, code1, make_code_list(gen_label_code(label1)), code2);
     }
-    else {
+    else { /* child num is 1: EXP, for IF(EXP)*/
         Operand *t1 = new_temp();
         InterCodeList *code1 = translate_Exp(p_node, t1);
         InterCodeList *code2 = make_code_list(gen_binop_code(NotEqual, label_true, \
@@ -150,8 +166,11 @@ InterCodeList *translate_Exp(ast_node *p_node, Operand *place) {
     if (child_num == 3 && children[0]->type == Exp_SYNTAX               \
         && children[1]->type == ASSIGNOP_TOKEN && children[2]->type == Exp_SYNTAX)
     {
+        /* Exp -> Exp ASSIGNOP EXP */
+        /* child is ID */
         Operand *t1 = (children[0]->lchild->next_sib == NULL) ? new_var_op(-1) : \
-            new_addr_op(-1), *t2 = new_temp();
+            new_addr_op(-1);  /* child is struct or array */
+        Operand *t2 = new_temp();
         InterCodeList *code1 = translate_Exp(children[0], t1),  \
             *code2 = translate_Exp(children[2], t2);
         InterCodeList *code3 = make_code_list(gen_assign_code(t1, t2));
@@ -209,7 +228,7 @@ InterCodeList *translate_Exp(ast_node *p_node, Operand *place) {
         && children[3]->type == RP_TOKEN || child_num == 3              \
         && children[0]->type == ID_TOKEN && children[1]->type == LP_TOKEN \
         && children[2]->type == RP_TOKEN)
-    {
+    { /* funciton */
         symbol_node *func_node = get_symbol(children[0]->value.str_val);
         Operand *ret = (place == NULL) ? new_temp() : place;
         if (child_num == 3) {
@@ -238,29 +257,29 @@ InterCodeList *translate_Exp(ast_node *p_node, Operand *place) {
     else if (child_num == 4 && children[0]->type == Exp_SYNTAX          \
         && children[1]->type == LB_TOKEN && children[2]->type == Exp_SYNTAX \
         && children[3]->type == RB_TOKEN)
-    {
+    { /* Array */
         Operand *t1 = new_var_op(-1), *t2 = new_temp(), \
             *t3 = new_temp(), *t4 = new_temp();
 
         InterCodeList *code1 = translate_Exp(children[0], t1);
         InterCodeList *code2 = translate_Exp(children[2], t2);
         InterCodeList *code3 = make_code_list(gen_binop_code(Mul, t3, t2, \
-                new_const_op(get_size_of(p_node->attr.type))));
+                new_const_op(get_size_of(p_node->attr.type)))); // size of arr
         InterCodeList *code4 = make_code_list(gen_binop_code(Add, t4, t1, t3));
         if (place == NULL)
             return link_inter_code(4, code1, code2, code3, code4);
-        else if (place->u.var_no < 0) {
+        else if (place->u.var_no < 0) { /* place is v */
             place->u.var_no = t4->u.var_no;
             return link_inter_code(4, code1, code2, code3, code4);
         }
-        else {
+        else { /* place is t */
             return link_inter_code( 5, code1, code2, code3, code4,
                 make_code_list(gen_assign_code(place, new_addr_op(t4->u.var_no))) );
         }
     }
     else if (child_num == 3 && children[0]->type == Exp_SYNTAX
         && children[1]->type == DOT_TOKEN && children[2]->type == ID_TOKEN)
-    {
+    { /* Struct */
         Operand *t1 = new_var_op(-1), *t2 = new_temp();
         InterCodeList *code1 = translate_Exp(children[0], t1);
 
@@ -278,11 +297,11 @@ InterCodeList *translate_Exp(ast_node *p_node, Operand *place) {
 
         if (place == NULL)
             return link_inter_code(2, code1, code2);
-        else if (place->u.var_no < 0) {
+        else if (place->u.var_no < 0) { /* place is a v(undecided) */
             place->u.var_no = t2->u.var_no;
             return link_inter_code(2, code1, code2);
         }
-        else {
+        else { /* place is a t(decided) */
             return link_inter_code( 3, code1, code2,                    \
                 make_code_list(gen_assign_code(place, new_addr_op(t2->u.var_no))) );
         }
@@ -299,7 +318,7 @@ InterCodeList *translate_Exp(ast_node *p_node, Operand *place) {
             else if (var_node->symbol.var_value.is_param)
                 place->kind = Variable;
             else
-                place->kind = Reference;
+                place->kind = Reference; /* Arrays and Structs */
             place->u.var_no = var_node->symbol.var_value.var_op->u.var_no;
         }
         else {
@@ -451,7 +470,7 @@ InterCodeList *translate(ast_node *p_node) {
         && children[0]->type == Specifier_SYNTAX                        \
         && children[1]->type == FunDec_SYNTAX                           \
         && children[2]->type == CompSt_SYNTAX)
-    {
+    { /* Function defination */
         InterCodeList *code1 = translate(children[0]);
         enter_deeper_scope();
         InterCodeList *code2 = translate(children[1]),  \

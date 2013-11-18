@@ -5,6 +5,10 @@
 #include <stdarg.h>
 #include <string.h>
 
+int temp_now;
+int label_now;
+
+// construction functions of each intercode
 InterCode *gen_func_code(char *func_name) {
    InterCode *code = (InterCode*)malloc(sizeof(InterCode));
    code->kind = FunCode;
@@ -61,6 +65,7 @@ InterCode *gen_dec_code(Operand *addr, Operand *size) {
    return code;
 }
 
+// construction functions for each operand
 Operand *new_var_op(int var_no) {
     Operand *op = (Operand*)malloc(sizeof(Operand));
     op->kind = Variable;
@@ -124,6 +129,7 @@ InterCodeList *link_inter_code(int n, ...) {
     return result;
 }
 
+// generate a new intercode list
 InterCodeList *make_code_list(InterCode *code) {
     InterCodeList *new_list = (InterCodeList*)malloc(sizeof(InterCodeList));
     new_list->code = code;
@@ -142,7 +148,7 @@ void print_inter_code(FILE *file, InterCodeList *codes) {
             fprintf(file, "FUNCTION %s :\n", code->u.func.func_name);
         else if (code->kind == LabelDec)
             fprintf(file, "LABEL label%d :\n", code->u.label.dest->u.var_no);
-        else if (code->kind == Assign) {
+        else if (code->kind == Assign) { // assign code
             if (code->u.assign.right->kind == Address)
                 fprintf(file, "*");
             fprintf(file, "t%d := ", code->u.assign.right->u.var_no);
@@ -158,9 +164,9 @@ void print_inter_code(FILE *file, InterCodeList *codes) {
         }
         else if (code->kind == Add || code->kind == Sub || code->kind  == Mul \
             || code->kind == Div) {
-
+            /* left (result) operand */
             fprintf(file, "t%d := ", code->u.binop.result->u.var_no);
-
+            /* right operand 1 */
             if (code->u.binop.op1->kind == Reference)
                 fprintf(file, "&t%d", code->u.binop.op1->u.var_no);
             else if (code->u.binop.op1->kind == Variable)
@@ -169,7 +175,7 @@ void print_inter_code(FILE *file, InterCodeList *codes) {
                 fprintf(file, "#%d", code->u.binop.op1->u.value);
 
             fprintf(file, " ");
-
+            /* operator */
             if (code->kind == Add)
                 fprintf(file, "+");
             else if (code->kind == Sub)
@@ -180,7 +186,7 @@ void print_inter_code(FILE *file, InterCodeList *codes) {
                 fprintf(file, "/");
 
             fprintf(file, " ");
-
+            /* right operand 2 */
             if (code->u.binop.op2->kind == Reference)
                 fprintf(file, "&t%d", code->u.binop.op2->u.var_no);
             else if (code->u.binop.op2->kind == Variable)
@@ -193,16 +199,16 @@ void print_inter_code(FILE *file, InterCodeList *codes) {
         else if (code->kind == Equal || code->kind == NotEqual          \
             || code->kind == More || code->kind == Less                 \
             || code->kind == MoreEqual || code->kind == LessEqual) {
-
+            /* print conditional jump */
             fprintf(file, "IF ");
-
+            /* condition operand 1 */
             if (code->u.binop.op1->kind == Variable)
                 fprintf(file, "t%d", code->u.binop.op1->u.var_no);
             else if (code->u.binop.op1->kind == Constant)
                 fprintf(file, "#%d", code->u.binop.op1->u.value);
 
             fprintf(file, " ");
-
+            /* condition operator */
             if (code->kind == Equal)
                 fprintf(file, "==");
             else if (code->kind == NotEqual)
@@ -217,7 +223,7 @@ void print_inter_code(FILE *file, InterCodeList *codes) {
                 fprintf(file, "<=");
 
             fprintf(file, " ");
-
+            /* condition operand 2 */
             if (code->u.binop.op2->kind == Variable)
                 fprintf(file, "t%d", code->u.binop.op2->u.var_no);
             else if (code->u.binop.op2->kind == Constant)
@@ -264,11 +270,11 @@ void print_inter_code(FILE *file, InterCodeList *codes) {
         tmp = tmp->next;
     } while (tmp != codes);
 }
-
+// new temp variabel
 Operand *new_temp() {
     return new_var_op(temp_now ++);
 }
-
+// new label
 Operand *new_label() {
     return new_lbl_op(label_now ++);
 }

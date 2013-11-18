@@ -5,13 +5,15 @@
 #include "ErrorHandler.h"
 #include "symbol_table.h"
 #include "semantic_analysis.h"
+#include "ir.h"
+#include "trans.h"
 
 extern int yyrestart(FILE *f);
 extern int yyparse();
 
 int main(int argc, char** argv)
 {
-	if (argc <= 1) return 1;
+	if (argc <= 2) return 1;
 	FILE* f = fopen(argv[1], "r");
 	if ( !f)
 	{
@@ -41,9 +43,11 @@ int main(int argc, char** argv)
         p_int_type->u.basic = Int;
         p_float_type->u.basic = Float;
 
-        insert_type(p_char_type);
-        insert_type(p_int_type);
-        insert_type(p_float_type);
+        //insert_type(p_char_type);
+        //insert_type(p_int_type);
+        //insert_type(p_float_type);
+
+        add_read_write_func();
 
         //printf("before sdt\n");
         sdt(gl_ast_root);
@@ -52,6 +56,17 @@ int main(int argc, char** argv)
         exit_top_scope();
     }
     //#endif
+    if (!gl_error_exist) {
+        init_translate();
+        init_symbol_table();
+        enter_deeper_scope();
+
+        add_read_write_func();
+
+        print_inter_code(fopen(argv[2], "w+"), translate(gl_ast_root));
+
+        exit_top_scope();
+    }
     free_ast_tree(gl_ast_root);
 	return 0;
 }

@@ -438,7 +438,7 @@ void handle_StructSpecifier(int child_num, ast_node *p_node, ast_node **children
             insert_symbol(new_symbol);
             p_node->attr.type = (Type*)malloc(sizeof(Type));
             p_node->attr.type->kind = Structure;
-            insert_type(p_node->attr.type);
+            //insert_type(p_node->attr.type);
             new_symbol->symbol.struct_value.structure = p_node->attr.type;
 
             children[3]->attr.is_in_struct = TRUE;
@@ -539,10 +539,11 @@ void handle_VarDec(int child_num, ast_node *p_node, ast_node **children) {
         type_node->kind = Array;
         type_node->u.array.elem = p_node->attr.inh_type;
         type_node->u.array.size = children[2]->value.int_val;
-        insert_type(type_node);
+        //insert_type(type_node);
         children[0]->attr.inh_type = type_node;
         children[0]->attr.is_in_struct = p_node->attr.is_in_struct;
         sdt(children[0]);
+        p_node->attr.structure = children[0]->attr.structure;
         p_node->attr.type = children[0]->attr.type;
         p_node->attr.id = children[0]->attr.id;
         p_node->attr.is_legal = children[0]->attr.is_legal; // !!!!!!!!!!!
@@ -776,6 +777,7 @@ void handle_Stmt(int child_num, ast_node *p_node, ast_node **children) {
         children[4]->attr.ret_type = p_node->attr.ret_type;
         sdt(children[4]);
         children[6]->attr.ret_type = p_node->attr.ret_type;
+        sdt(children[6]);
     }
     else if (child_num == 5 && children[0]->type == WHILE_TOKEN            \
         && children[1]->type == LP_TOKEN && children[2]->type == Exp_SYNTAX \

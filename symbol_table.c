@@ -35,8 +35,8 @@ void enter_deeper_scope() {
     ++gl_cur_depth;
     gl_scope_stack[gl_cur_depth].data = NULL;
     gl_scope_stack[gl_cur_depth].scope_next = NULL;
-    gl_type_stack[gl_cur_depth].data = NULL;
-    gl_type_stack[gl_cur_depth].next = NULL;
+    //gl_type_stack[gl_cur_depth].data = NULL;
+    //gl_type_stack[gl_cur_depth].next = NULL;
 }
 
 void exit_top_scope() {
@@ -61,6 +61,7 @@ void exit_top_scope() {
         free(tmp_node);
     }
     /* delete node for struct symbol */
+    /*
     type_list *p_type = gl_type_stack[gl_cur_depth].next;
     while (p_type) {
         type_list *tmp_type = p_type;
@@ -76,7 +77,7 @@ void exit_top_scope() {
         free(tmp_type->data);
         free(tmp_type);
     }
-
+    */
     --gl_cur_depth;
 }
 
@@ -106,13 +107,14 @@ void insert_symbol(symbol_node *p_symbol) {
     new_node->scope_next = gl_scope_stack[gl_cur_depth].scope_next;
     gl_scope_stack[gl_cur_depth].scope_next = new_node;
 }
-
+/*
 void insert_type(Type *data) {
     type_list *new_type = (type_list*)malloc(sizeof(type_list));
     new_type->data = data;
     new_type->next = gl_type_stack[gl_cur_depth].next;
     gl_type_stack[gl_cur_depth].next = new_type;
 }
+*/
 
 void add_read_write_func() {
     symbol_node *read_func = (symbol_node*)malloc(sizeof(symbol_node));

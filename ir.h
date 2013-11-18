@@ -7,7 +7,7 @@
 typedef struct Operand_ Operand;
 typedef struct InterCode_ InterCode;
 
-struct Operand_ {
+struct Operand_ { // the "non-keyword tokens" of the ir.
     enum { Label, Variable, Constant, Address, Reference } kind;
     union {
         int var_no;
@@ -19,14 +19,14 @@ typedef enum { FunCode, LabelDec, Assign, Add, Sub, Mul, Div, Goto, Equal \
                , More, Less, MoreEqual, LessEqual, NotEqual, Return, Dec \
                , Arg, Call, Param, Read, Write } code_kind;
 
-struct InterCode_ {
+struct InterCode_ { // a line of ir.
     code_kind kind;
     union {
         struct { char func_name[MAX_SYMBOL_NAME]; } func;
         struct { Operand *dest; } label;
         struct { Operand *right, *left; } assign;
-        struct { Operand *result, *op1, *op2; } binop;
-        struct { Operand *op; } command;
+        struct { Operand *result, *op1, *op2; } binop; // For Add~Div && Condition
+        struct { Operand *op; } command; // for ARG
         struct { Operand *result; char func_name[MAX_SYMBOL_NAME]; } call;
         struct { Operand *addr, *size; } dec;
     } u;
@@ -53,9 +53,9 @@ Operand *new_const_op(int value);
 Operand *new_addr_op(int value);
 Operand *new_ref_op(int val_no);
 Operand *new_lbl_op(int val_no);
-
-int temp_now;
-int label_now;
+/* number for temp variables and labels */
+extern int temp_now;
+extern int label_now;
 Operand *new_temp();
 Operand *new_label();
 

@@ -7,7 +7,9 @@ typedef enum {Char, Int, Float} basic_type;
 typedef struct FieldList_ FieldList;
 typedef struct Type_ Type;
 
-/* Definations */
+/* Type System */
+
+/* Field of a structure (a line of defination in the {} of structure) */
 struct FieldList_ {
     char id[MAX_SYMBOL_NAME];
     int lineno;
@@ -15,6 +17,7 @@ struct FieldList_ {
     FieldList * next;
 };
 
+/* Type system */
 struct Type_ {
     enum {Basic, Array, Structure} kind;
     union {

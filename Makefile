@@ -57,4 +57,4 @@ clean :
 	rm *.o parser scanner
 
 realclean:
-	rm -f *.o parser scannner parser.tab.c parser.tab.h lex.yy.c
+	rm -f *.ir *.o parser scannner parser.tab.c parser.tab.h lex.yy.c

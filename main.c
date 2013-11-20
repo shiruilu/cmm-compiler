@@ -63,7 +63,8 @@ int main(int argc, char** argv)
 
         add_read_write_func();
 
-        print_inter_code(fopen(argv[2], "w+"), translate(gl_ast_root));
+        //print_inter_code(fopen(argv[2], "w+"), translate(gl_ast_root));
+        gen_code( fopen(argv[2], "w+"), translate(gl_ast_root) );
 
         exit_top_scope();
     }

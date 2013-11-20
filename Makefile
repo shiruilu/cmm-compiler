@@ -6,8 +6,8 @@ YFLAGS = -d -v
 DEBUGFLAGS = -g
 LIB = -lfl -ly
 
-HEADERS = defs.h ErrorHandler.h ast.h type.h semantic_analysis.h symbol_table.h\
-			type.h ir.h trans.h
+HEADERS = parser.tab.h defs.h ErrorHandler.h ast.h type.h semantic_analysis.h symbol_table.h\
+			type.h ir.h trans.h gen_code.h var_table.h
 
 OBJS = defs.o\
 	type.o\
@@ -18,12 +18,21 @@ OBJS = defs.o\
 	ast.o\
 	ir.o\
 	trans.o\
+	var_table.o\
+	gen_code.o\
 	main.o
+
+scc	: defs.o ErrorHandler.o parser.tab.o semantic_analysis.o symbol_table.o ast.o\
+		ir.o trans.o type.o var_table.o gen_code.o main.o lex.yy.c $(HEADERS)
+	$(CC) $(DEBUGFLAGS) gen_code.o var_table.o defs.o ErrorHandler.o parser.tab.o	\
+		semantic_analysis.o symbol_table.o ast.o ir.o trans.o type.o main.o	\
+		$(CFLAGS) $(LIB) -o scc
 
 parser : defs.o ErrorHandler.o parser.tab.o semantic_analysis.o symbol_table.o\
 		ast.o ir.o trans.o type.o main.o lex.yy.c $(HEADERS)
-	$(CC) $(DEBUGFLAGS) defs.o ErrorHandler.o parser.tab.o semantic_analysis.o symbol_table.o\
-			ast.o ir.o trans.o type.o main.o $(CFLAGS) $(LIB) -o parser
+	$(CC) $(DEBUGFLAGS) defs.o ErrorHandler.o parser.tab.o semantic_analysis.o	\
+		symbol_table.o ast.o ir.o trans.o type.o main.o $(CFLAGS) $(LIB) -o parser
+
 scanner	: lexmain.c lex.yy.c
 	$(CC) lex.yy.c lexmain.c $(CFLAGS) -lfl -o scanner
 main.o : main.c $(HEADERS)
@@ -47,6 +56,10 @@ trans.o : trans.c trans.h ir.h ast.h defs.h symbol_table.h
 	$(CC) $(CFLAGS) trans.c -c
 type.o : type.c type.h
 	$(CC) $(CFLAGS) type.c -c
+var_table.o : var_table.c var_table.h defs.h
+	$(CC) $(CFLAGS) var_table.c -c
+gen_code.o : gen_code.c gen_code.h defs.h ir.h var_table.h
+	$(CC) $(CFLAGS) gen_code.c -c
 parser.tab.c : lex.yy.c parser.y $(HEADERS)
 	$(YACC) $(YFLAGS) parser.y
 lex.yy.c : parser.tab.h scanner.l $(HEADERS)
@@ -54,7 +67,7 @@ lex.yy.c : parser.tab.h scanner.l $(HEADERS)
 parser.tab.h : parser.y
 
 clean :
-	rm *.o parser scanner
+	rm *.o scc parser scanner
 
 realclean:
-	rm -f *.ir *.o parser scannner parser.tab.c parser.tab.h lex.yy.c
+	rm -f *.ir *.o scc parser scannner parser.tab.c parser.tab.h lex.yy.c

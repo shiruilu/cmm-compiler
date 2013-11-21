@@ -7,13 +7,14 @@
 #include "semantic_analysis.h"
 #include "ir.h"
 #include "trans.h"
+#include "opt.h"
 
 extern int yyrestart(FILE *f);
 extern int yyparse();
 
 int main(int argc, char** argv)
 {
-	if (argc <= 2) return 1;
+	//if (argc <= 2) return 1;
 	FILE* f = fopen(argv[1], "r");
 	if ( !f)
 	{
@@ -63,8 +64,20 @@ int main(int argc, char** argv)
 
         add_read_write_func();
 
-        //print_inter_code(fopen(argv[2], "w+"), translate(gl_ast_root));
-        gen_code( fopen(argv[2], "w+"), translate(gl_ast_root) );
+        InterCodeList * ir_list = translate(gl_ast_root);
+        if ( !strcmp(argv[2], "-O") )
+        {
+            opt(ir_list);
+        }
+
+        if ( !strcmp(argv[3], "-i") )
+        {
+            print_inter_code(fopen(argv[4], "w+"), ir_list );
+        }
+        else if ( !strcmp(argv[3], "-s") )
+        {
+            gen_code( fopen(argv[4], "w+"), ir_list );
+        }
 
         exit_top_scope();
     }

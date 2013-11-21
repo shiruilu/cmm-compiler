@@ -5,9 +5,11 @@ CFLAGS = -g
 YFLAGS = -d -v
 DEBUGFLAGS = -g
 LIB = -lfl -ly
+OUT_IR = tests/ir/out_files/
+OUT_S = tests/goal/out_files/
 
 HEADERS = parser.tab.h defs.h ErrorHandler.h ast.h type.h semantic_analysis.h symbol_table.h\
-			type.h ir.h trans.h gen_code.h var_table.h
+			type.h ir.h trans.h gen_code.h var_table.h opt.h
 
 OBJS = defs.o\
 	type.o\
@@ -18,14 +20,15 @@ OBJS = defs.o\
 	ast.o\
 	ir.o\
 	trans.o\
+	opt.o\
 	var_table.o\
 	gen_code.o\
 	main.o
 
 scc	: defs.o ErrorHandler.o parser.tab.o semantic_analysis.o symbol_table.o ast.o\
-		ir.o trans.o type.o var_table.o gen_code.o main.o lex.yy.c $(HEADERS)
+		ir.o trans.o opt.o type.o var_table.o gen_code.o main.o lex.yy.c $(HEADERS)
 	$(CC) $(DEBUGFLAGS) gen_code.o var_table.o defs.o ErrorHandler.o parser.tab.o	\
-		semantic_analysis.o symbol_table.o ast.o ir.o trans.o type.o main.o	\
+		semantic_analysis.o symbol_table.o ast.o ir.o trans.o opt.o type.o main.o	\
 		$(CFLAGS) $(LIB) -o scc
 
 parser : defs.o ErrorHandler.o parser.tab.o semantic_analysis.o symbol_table.o\
@@ -54,6 +57,8 @@ ir.o : ir.c ir.h defs.h
 	$(CC) $(CFLAGS) ir.c -c
 trans.o : trans.c trans.h ir.h ast.h defs.h symbol_table.h
 	$(CC) $(CFLAGS) trans.c -c
+opt.o : opt.c opt.h ir.h defs.h
+	$(CC) $(CFLAGS) opt.c -c
 type.o : type.c type.h
 	$(CC) $(CFLAGS) type.c -c
 var_table.o : var_table.c var_table.h defs.h
@@ -67,7 +72,7 @@ lex.yy.c : parser.tab.h scanner.l $(HEADERS)
 parser.tab.h : parser.y
 
 clean :
-	rm *.o scc parser scanner
+	rm -f ${OUT_IR}*.ir ${OUT_S}*.s *.o scc parser scanner
 
 realclean:
-	rm -f *.ir *.o scc parser scannner parser.tab.c parser.tab.h lex.yy.c
+	rm -f ${OUT_IR}*.ir ${OUT_S}*.s  *.o scc parser scannner parser.tab.c parser.tab.h lex.yy.c

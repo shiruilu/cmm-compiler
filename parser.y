@@ -128,7 +128,7 @@ Exp :   Exp ASSIGNOP Exp { $$ = create_syntax(Exp_SYNTAX, 3, $1, $2, $3); }
     |   Exp MINUS Exp { $$ = create_syntax(Exp_SYNTAX, 3, $1, $2, $3); }
     |   Exp STAR Exp { $$ = create_syntax(Exp_SYNTAX, 3, $1, $2, $3); }
     |   Exp DIV Exp { $$ = create_syntax(Exp_SYNTAX, 3, $1, $2, $3); }
-    |   LP Exp RP
+    |   LP Exp RP { $$ = create_syntax(Exp_SYNTAX, 3, $1, $2, $3); }
     |   MINUS Exp %prec UMINUS { $$ = create_syntax(Exp_SYNTAX, 2, $1, $2); }
     |   NOT Exp { $$ = create_syntax(Exp_SYNTAX, 2, $1, $2); }
     |   ID LP Args RP { $$ = create_syntax(Exp_SYNTAX, 4, $1, $2, $3, $4); }

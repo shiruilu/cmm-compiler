@@ -1,8 +1,8 @@
 #!/bin/bash
 
-for i in $( ls tests/goal )
+for i in $( ls -l tests/goal | grep ^- | awk '{print $9}' )
 do
     echo $i :
-    ./scc -N -s tests/goal/$i tests/goal/out_files/${i}.s
-    ./scc -O -s tests/goal/$i tests/goal/out_files/${i}_o.s
+    ./scc tests/goal/$i -N -s tests/goal/out_files/${i}.s
+    ./scc tests/goal/$i -O -s tests/goal/out_files/${i}_o.s
 done

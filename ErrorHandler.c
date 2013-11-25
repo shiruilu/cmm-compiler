@@ -12,7 +12,7 @@ void reportError(int errorcode, int lineno, int column,  const char *msg)
 	gl_error_exist = TRUE;
 
 	const char *defaultMsg[] = { "lexical error", "syntax error", "comment error" };
-	fprintf(stderr, "Error type %d at %d:%d ", errorcode, lineno, column);
+	fprintf(stderr, "Error type %d at line:%d ", errorcode, lineno);
 	if (NULL == msg) {
 		fprintf(stderr, "%s\n", defaultMsg[errorcode - 1]);
 	}

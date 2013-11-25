@@ -5,6 +5,8 @@ CFLAGS = -g
 YFLAGS = -d -v
 DEBUGFLAGS = -g
 LIB = -lfl -ly
+OUT_SYN = tests/syntax/out_files/
+OUT_SEM = tests/seman/out_files/
 OUT_IR = tests/ir/out_files/
 OUT_S = tests/goal/out_files/
 
@@ -72,7 +74,9 @@ lex.yy.c : parser.tab.h scanner.l $(HEADERS)
 parser.tab.h : parser.y
 
 clean :
-	rm -f ${OUT_IR}*.ir ${OUT_S}*.s *.o scc parser scanner
+	rm -f ${OUT_SYN}*.syn ${OUT_SEM}*.sem ${OUT_IR}*.ir ${OUT_S}*.s	\
+	*.o scc parser scanner
 
 realclean:
-	rm -f ${OUT_IR}*.ir ${OUT_S}*.s  *.o scc parser scannner parser.tab.c parser.tab.h lex.yy.c
+	rm -f ${OUT_SYN}*.syn ${OUT_SEM}*.sem ${OUT_IR}*.ir ${OUT_S}*.s	\
+	*.o scc parser scannner parser.tab.c parser.tab.h lex.yy.c

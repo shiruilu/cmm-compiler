@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in $( ls tests/ir )
+for i in $( ls -l tests/ir | grep ^- | awk '{print $9}' )
 do
     echo $i :
     ./scc tests/ir/$i -N -i tests/ir/out_files/${i}.ir

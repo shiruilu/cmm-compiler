@@ -1,4 +1,5 @@
 int main() {
     int a = 00000110, b = 0X00FFFF, c = 10;
     float d = 01.23E12, e = 43.92e-4, f = 5e03;
+    float x = 9e.8e;
 }
